@@ -1,20 +1,53 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lego_rental_frontend/core/widgets/app_background.dart';
+import 'package:lego_rental_frontend/features/home/widgets/set_card.dart';
 import 'package:lego_rental_frontend/features/main/main_screen.dart';
+import 'package:lego_rental_frontend/features/sets/sets/sets_providers.dart';
 
-
-
-
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(setsProvider.notifier).loadSets();
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _onSearch(String keyword) {
+    ref.read(setsProvider.notifier).loadSets(keyword: keyword.trim());
+  }
+
+  void _onCategoryTap(String category) {
+  _searchController.text = category;
+  setState(() {});
+  ref.read(setsProvider.notifier).loadSets(keyword: category);
+}
+
+  @override
   Widget build(BuildContext context) {
+    final setsState = ref.watch(setsProvider);
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5CB58),
       body: AppBackground(
         title: 'Home',
-        onBack: null, // nincs vissza gomb a home-on
+        onBack: null,
         onHome: null,
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
@@ -28,11 +61,23 @@ class HomeScreen extends StatelessWidget {
                 children: [
                   Expanded(
                     child: TextField(
+                      controller: _searchController,
+                      onSubmitted: _onSearch,
+                      textInputAction: TextInputAction.search,
                       decoration: InputDecoration(
                         filled: true,
                         fillColor: const Color(0xFFF3E9B5),
                         hintText: 'Search LEGO sets...',
                         prefixIcon: const Icon(Icons.search),
+                        suffixIcon: _searchController.text.isNotEmpty
+                            ? IconButton(
+                                icon: const Icon(Icons.clear),
+                                onPressed: () {
+                                  _searchController.clear();
+                                  _onSearch('');
+                                },
+                              )
+                            : null,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(13),
                           borderSide: BorderSide.none,
@@ -42,6 +87,9 @@ class HomeScreen extends StatelessWidget {
                           vertical: 12,
                         ),
                       ),
+                      onChanged: (value) {
+                        setState(() {}); // suffixIcon frissítéséhez
+                      },
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -60,9 +108,8 @@ class HomeScreen extends StatelessWidget {
 
               const SizedBox(height: 24),
 
-              // Let's Play! cím
               const Text(
-                'Let\'s Play!',
+                "Let's Play!",
                 style: TextStyle(
                   color: Color(0xFF391713),
                   fontSize: 28,
@@ -81,7 +128,6 @@ class HomeScreen extends StatelessWidget {
 
               const SizedBox(height: 24),
 
-              // Browse Categories cím
               const Text(
                 'Browse Categories',
                 style: TextStyle(
@@ -91,8 +137,6 @@ class HomeScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 12),
-
-              // Kategória lista vízszintesen
               SizedBox(
                 height: 120,
                 child: ListView(
@@ -109,11 +153,11 @@ class HomeScreen extends StatelessWidget {
 
               const SizedBox(height: 24),
 
-              // Placeholder a készlet kártyáknak
-              // Available nearby cím
-              const Text(
-                'Available nearby',
-                style: TextStyle(
+              Text(
+                _searchController.text.trim().isEmpty
+                    ? 'Available sets'
+                    : 'Results for "${_searchController.text.trim()}"',
+                style: const TextStyle(
                   color: Color(0xFF391713),
                   fontSize: 20,
                   fontWeight: FontWeight.w600,
@@ -121,43 +165,84 @@ class HomeScreen extends StatelessWidget {
               ),
               const SizedBox(height: 12),
 
-              // Készlet kártyák rácsban
-              GridView.count(
-                crossAxisCount: 2,
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                mainAxisSpacing: 12,
-                crossAxisSpacing: 12,
-                childAspectRatio: 0.75,
-                children: const [
-                  _LegoSetCard(
-                    title: 'LEGO City Police Station',
-                    price: '3500 Ft/week',
+              if (setsState.isLoading)
+                const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(32),
+                    child: CircularProgressIndicator(
+                      color: Color(0xFF391713),
+                    ),
                   ),
-                  _LegoSetCard(
-                    title: 'Star Wars Millennium Falcon',
-                    price: '5000 Ft/week',
+                )
+              else if (setsState.error != null)
+                Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      children: [
+                        const Icon(Icons.error_outline,
+                            color: Colors.red, size: 48),
+                        const SizedBox(height: 8),
+                        Text(
+                          setsState.error!,
+                          style: const TextStyle(color: Colors.red),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: () => _onSearch(''),
+                          child: const Text('Retry'),
+                        ),
+                      ],
+                    ),
                   ),
-                  _LegoSetCard(
-                    title: 'Technic Porsche 911',
-                    price: '4500 Ft/week',
+                )
+              else if (setsState.items.isEmpty)
+                const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(32),
+                    child: Text(
+                      'No LEGO sets found.',
+                      style: TextStyle(
+                        color: Color(0xFF848383),
+                        fontSize: 16,
+                      ),
+                    ),
                   ),
-                  _LegoSetCard(
-                    title: 'Friends Heartlake City',
-                    price: '2800 Ft/week',
+                )
+              else
+                GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: setsState.items.length,
+                  gridDelegate:
+                      const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    mainAxisSpacing: 12,
+                    crossAxisSpacing: 12,
+                    childAspectRatio: 0.75,
                   ),
-                ],
-              ),
+                  itemBuilder: (context, index) {
+                    final set = setsState.items[index];
+                    return SetCard(
+                      set: set,
+                      onTap: () {
+                        // TODO: SetDetailScreen(setId: set.id)
+                      },
+                    );
+                  },
+                ),
             ],
           ),
         ),
       ),
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: 0, // 0 = Search, ez lesz „alap” tab, ha átlépsz
+        currentIndex: 0,
         onTap: (index) {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (_) => MainScreen(initialIndex: index)),
+            MaterialPageRoute(
+                builder: (_) => MainScreen(initialIndex: index)),
           );
         },
         selectedItemColor: const Color(0xFF391713),
@@ -168,13 +253,9 @@ class HomeScreen extends StatelessWidget {
           BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Search'),
           BottomNavigationBarItem(icon: Icon(Icons.add_box), label: 'Upload'),
           BottomNavigationBarItem(
-            icon: Icon(Icons.qr_code_scanner),
-            label: 'Scan',
-          ),
+              icon: Icon(Icons.qr_code_scanner), label: 'Scan'),
           BottomNavigationBarItem(
-            icon: Icon(Icons.notifications),
-            label: 'Messages',
-          ),
+              icon: Icon(Icons.notifications), label: 'Messages'),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
         ],
       ),
@@ -185,12 +266,16 @@ class HomeScreen extends StatelessWidget {
 class _CategoryCard extends StatelessWidget {
   final String title;
   final Color color;
+  final VoidCallback? onTap;
 
-  const _CategoryCard({required this.title, required this.color});
+  const _CategoryCard({required this.title, required this.color, this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return GestureDetector(
+      onTap: onTap,
+
+    child: Container(
       width: 100,
       margin: const EdgeInsets.only(right: 12),
       decoration: BoxDecoration(
@@ -208,75 +293,8 @@ class _CategoryCard extends StatelessWidget {
           textAlign: TextAlign.center,
         ),
       ),
+    ),
     );
   }
 }
 
-class _LegoSetCard extends StatelessWidget {
-  final String title;
-  final String price;
-
-  const _LegoSetCard({required this.title, required this.price});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFFF3E9B5),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Placeholder kép
-          Expanded(
-            flex: 3,
-            child: Container(
-              decoration: const BoxDecoration(
-                color: Color(0xFFE0E0E0),
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(16),
-                  topRight: Radius.circular(16),
-                ),
-              ),
-              child: const Center(
-                child: Icon(Icons.image, size: 48, color: Colors.grey),
-              ),
-            ),
-          ),
-          // Szöveg rész
-          Expanded(
-            flex: 2,
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      color: Color(0xFF391713),
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  Text(
-                    price,
-                    style: const TextStyle(
-                      color: Color(0xFF848383),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}

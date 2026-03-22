@@ -8,6 +8,10 @@ import 'package:lego_rental_frontend/features/messages/messages_screen.dart';
 import 'package:lego_rental_frontend/features/profile/profile_screen.dart';
 //import 'package:lego_rental_frontend/features/set_detail/set_detail_screen.dart';
 
+
+
+
+
 class MainScreen extends StatefulWidget {
   final int initialIndex;
 

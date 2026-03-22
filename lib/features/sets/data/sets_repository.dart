@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 
 import 'lego_set.dart';
-import 'package:lego_rental_frontend/features/auth/auth_providers.dart';
 
 class SetsRepository {
   final http.Client _client;
@@ -45,6 +44,7 @@ Future<List<LegoSet>> loadSets({
 }) async {
   final uri = Uri.parse('$baseUrl/sets/').replace(
     queryParameters: {
+      'public': 'true',
       if (keyword != null && keyword.isNotEmpty) 'keyword': keyword,
     },
   );

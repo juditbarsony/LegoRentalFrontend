@@ -1,13 +1,13 @@
 class LegoSet {
   final int id;
-  final String name;
+  final String title;
   final String? setNum;
   final String? location;
   final String? imageUrl;
 
   LegoSet({
     required this.id,
-    required this.name,
+    required this.title,
     this.setNum,
     this.location,
     this.imageUrl,
@@ -16,7 +16,7 @@ class LegoSet {
   factory LegoSet.fromJson(Map<String, dynamic> json) {
     return LegoSet(
       id: json['id'] as int,
-      name: json['name']?.toString() ?? '',
+      title: json['title']?.toString() ?? '',
       setNum: json['set_num']?.toString(),
       location: json['location']?.toString(),
       imageUrl: json['image_url']?.toString(), // ha van ilyen mező

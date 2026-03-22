@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:lego_rental_frontend/features/auth/auth_repository.dart';
+import 'package:lego_rental_frontend/core/services/api_service.dart'; 
 
 
 class AuthState {
@@ -42,7 +43,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
     try {
       final token = await _authRepository.login(email: email, password: password);
-
+      await ApiService.saveToken(token);
       final userJson = await _authRepository.getCurrentUser(token);
       final userName = userJson['full_name']?.toString() ?? userJson['email']?.toString() ?? email;
 

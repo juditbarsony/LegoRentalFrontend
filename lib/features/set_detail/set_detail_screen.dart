@@ -613,7 +613,7 @@ class _SetDetailContent extends StatelessWidget {
     // ide jöhet a már meglévő naptár, foglalás gomb, stb.
     return Column(
       children: [
-        Text(set.name),
+        Text(set.title),
         if (set.setNum != null) Text('Set #: ${set.setNum}'),
         if (set.location != null) Text('Helyszín: ${set.location}'),
         // ...

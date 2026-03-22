@@ -45,7 +45,7 @@ class LegoSetCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    set.name,
+                    set.title,
                     style: const TextStyle(
                       color: Color(0xFF391713),
                       fontSize: 18,
