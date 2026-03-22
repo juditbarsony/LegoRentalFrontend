@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lego_rental_frontend/core/widgets/app_background.dart';
 import 'package:lego_rental_frontend/features/home/home_screen.dart';
 import 'package:lego_rental_frontend/features/sets/sets/sets_providers.dart';
-import 'package:lego_rental_frontend/features/sets/widgets/lego_set_card.dart';
+
 
 class SearchScreen extends ConsumerStatefulWidget {
   const SearchScreen({super.key});
@@ -222,9 +222,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   itemCount: setsState.items.length,
                   itemBuilder: (context, index) {
                     final set = setsState.items[index];
-                    return LegoSetCard(
-                      set: set,
-                      onTap: () {
+                    return LegoSetCard(set: set,onTap: () 
+                    {
                         Navigator.pushNamed(
                           context,
                           '/set-detail',

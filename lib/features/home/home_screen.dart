@@ -1,26 +1,38 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lego_rental_frontend/core/models/lego_set_model.dart';
+import 'package:lego_rental_frontend/core/services/api_service.dart';
 import 'package:lego_rental_frontend/core/widgets/app_background.dart';
-import 'package:lego_rental_frontend/features/home/widgets/set_card.dart';
 import 'package:lego_rental_frontend/features/main/main_screen.dart';
-import 'package:lego_rental_frontend/features/sets/sets/sets_providers.dart';
 
-class HomeScreen extends ConsumerStatefulWidget {
+
+
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+  State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends ConsumerState<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController _searchController = TextEditingController();
+  List<LegoSetModel> _sets = [];
+  bool _isLoading = true;
+  String? _error;
+  int? _selectedThemeId;
+
+  static const List<Map<String, dynamic>> _categories = [
+    {'label': 'City',        'themeId': 672, 'color': Color(0xFFFF6B6B)},
+    {'label': 'Star Wars',   'themeId': 171, 'color': Color(0xFF4ECDC4)},
+    {'label': 'Technic',     'themeId': 1,   'color': Color(0xFFFFE66D)},
+    {'label': 'Friends',     'themeId': 246, 'color': Color(0xFFA8E6CF)},
+    {'label': 'Creator',     'themeId': 22,  'color': Color(0xFFFFAA80)},
+    {'label': 'Harry Potter','themeId': 406, 'color': Color(0xFF9B59B6)},
+  ];
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(setsProvider.notifier).loadSets();
-    });
+    _loadSets();
   }
 
   @override
@@ -29,20 +41,49 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     super.dispose();
   }
 
-  void _onSearch(String keyword) {
-    ref.read(setsProvider.notifier).loadSets(keyword: keyword.trim());
+  Future<void> _loadSets({String? keyword, int? themeId}) async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+    try {
+      // Ha a keyword "12345-1" formátumú → set_num keresés
+      final isSetNum = keyword != null &&
+          RegExp(r'^\d{4,6}-\d$').hasMatch(keyword);
+      final results = await ApiService.fetchSets(
+        keyword: isSetNum ? null : keyword,
+        setNum: isSetNum ? keyword : null,
+        themeId: themeId,
+        limit: 20,
+      );
+      setState(() {
+        _sets = results.map((e) => LegoSetModel.fromJson(e)).toList();
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+        _isLoading = false;
+      });
+    }
   }
 
-  void _onCategoryTap(String category) {
-  _searchController.text = category;
-  setState(() {});
-  ref.read(setsProvider.notifier).loadSets(keyword: category);
-}
+  void _onSearch(String value) {
+    _loadSets(keyword: value.trim(), themeId: _selectedThemeId);
+  }
+
+  void _onCategoryTap(int themeId) {
+    setState(() {
+      _selectedThemeId = _selectedThemeId == themeId ? null : themeId;
+    });
+    _loadSets(
+      keyword: _searchController.text.trim(),
+      themeId: _selectedThemeId,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    final setsState = ref.watch(setsProvider);
-
     return Scaffold(
       backgroundColor: const Color(0xFFF5CB58),
       body: AppBackground(
@@ -56,7 +97,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             children: [
               const SizedBox(height: 16),
 
-              // Keresőmező + settings ikon
+              // Keresőmező
               Row(
                 children: [
                   Expanded(
@@ -67,14 +108,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       decoration: InputDecoration(
                         filled: true,
                         fillColor: const Color(0xFFF3E9B5),
-                        hintText: 'Search LEGO sets...',
+                        hintText: 'Search by name or set number...',
                         prefixIcon: const Icon(Icons.search),
                         suffixIcon: _searchController.text.isNotEmpty
                             ? IconButton(
                                 icon: const Icon(Icons.clear),
                                 onPressed: () {
                                   _searchController.clear();
-                                  _onSearch('');
+                                  _loadSets(themeId: _selectedThemeId);
                                 },
                               )
                             : null,
@@ -87,19 +128,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           vertical: 12,
                         ),
                       ),
-                      onChanged: (value) {
-                        setState(() {}); // suffixIcon frissítéséhez
-                      },
+                      onChanged: (value) => setState(() {}),
                     ),
                   ),
                   const SizedBox(width: 8),
                   IconButton(
-                    onPressed: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(builder: (_) => const MainScreen()),
-                      );
-                    },
+                    onPressed: () => Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (_) => const MainScreen()),
+                    ),
                     icon: const Icon(Icons.tune),
                     color: const Color(0xFF391713),
                   ),
@@ -107,7 +144,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
 
               const SizedBox(height: 24),
-
               const Text(
                 "Let's Play!",
                 style: TextStyle(
@@ -127,7 +163,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
 
               const SizedBox(height: 24),
-
               const Text(
                 'Browse Categories',
                 style: TextStyle(
@@ -137,26 +172,73 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
               ),
               const SizedBox(height: 12),
+
+              // Kategória csík
               SizedBox(
-                height: 120,
-                child: ListView(
+                height: 80,
+                child: ListView.builder(
                   scrollDirection: Axis.horizontal,
-                  children: const [
-                    _CategoryCard(title: 'City', color: Color(0xFFFF6B6B)),
-                    _CategoryCard(title: 'Star Wars', color: Color(0xFF4ECDC4)),
-                    _CategoryCard(title: 'Technic', color: Color(0xFFFFE66D)),
-                    _CategoryCard(title: 'Friends', color: Color(0xFFA8E6CF)),
-                    _CategoryCard(title: 'Creator', color: Color(0xFFFFAA80)),
-                  ],
+                  itemCount: _categories.length,
+                  itemBuilder: (context, index) {
+                    final cat = _categories[index];
+                    final isSelected = _selectedThemeId == cat['themeId'];
+                    return GestureDetector(
+                      onTap: () => _onCategoryTap(cat['themeId'] as int),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        width: 90,
+                        margin: const EdgeInsets.only(right: 10),
+                        decoration: BoxDecoration(
+                          color: cat['color'] as Color,
+                          borderRadius: BorderRadius.circular(14),
+                          border: isSelected
+                              ? Border.all(
+                                  color: const Color(0xFF391713), width: 3)
+                              : null,
+                          boxShadow: isSelected
+                              ? [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.2),
+                                    blurRadius: 6,
+                                    offset: const Offset(0, 3),
+                                  )
+                                ]
+                              : null,
+                        ),
+                        child: Center(
+                          child: Text(
+                            cat['label'] as String,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              shadows: isSelected
+                                  ? [
+                                      const Shadow(
+                                        color: Colors.black26,
+                                        blurRadius: 4,
+                                      )
+                                    ]
+                                  : null,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ),
 
               const SizedBox(height: 24),
 
+              // Szekció cím
               Text(
-                _searchController.text.trim().isEmpty
-                    ? 'Available sets'
-                    : 'Results for "${_searchController.text.trim()}"',
+                _selectedThemeId != null
+                    ? '${_categories.firstWhere((c) => c['themeId'] == _selectedThemeId)['label']} sets'
+                    : _searchController.text.trim().isEmpty
+                        ? 'Available sets'
+                        : 'Results for "${_searchController.text.trim()}"',
                 style: const TextStyle(
                   color: Color(0xFF391713),
                   fontSize: 20,
@@ -165,7 +247,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
               const SizedBox(height: 12),
 
-              if (setsState.isLoading)
+              // Tartalom
+              if (_isLoading)
                 const Center(
                   child: Padding(
                     padding: EdgeInsets.all(32),
@@ -174,7 +257,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ),
                   ),
                 )
-              else if (setsState.error != null)
+              else if (_error != null)
                 Center(
                   child: Padding(
                     padding: const EdgeInsets.all(16),
@@ -184,20 +267,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             color: Colors.red, size: 48),
                         const SizedBox(height: 8),
                         Text(
-                          setsState.error!,
+                          _error!,
                           style: const TextStyle(color: Colors.red),
                           textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 16),
                         ElevatedButton(
-                          onPressed: () => _onSearch(''),
+                          onPressed: () => _loadSets(),
                           child: const Text('Retry'),
                         ),
                       ],
                     ),
                   ),
                 )
-              else if (setsState.items.isEmpty)
+              else if (_sets.isEmpty)
                 const Center(
                   child: Padding(
                     padding: EdgeInsets.all(32),
@@ -214,22 +297,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 GridView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  itemCount: setsState.items.length,
+                  itemCount: _sets.length,
                   gridDelegate:
                       const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
                     mainAxisSpacing: 12,
                     crossAxisSpacing: 12,
-                    childAspectRatio: 0.75,
+                    childAspectRatio: 0.72,
                   ),
                   itemBuilder: (context, index) {
-                    final set = setsState.items[index];
-                    return SetCard(
-                      set: set,
-                      onTap: () {
-                        // TODO: SetDetailScreen(setId: set.id)
-                      },
-                    );
+                    return LegoSetCard(legoSet: _sets[index]);
                   },
                 ),
             ],
@@ -238,13 +315,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: 0,
-        onTap: (index) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-                builder: (_) => MainScreen(initialIndex: index)),
-          );
-        },
+        onTap: (index) => Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => MainScreen(initialIndex: index)),
+        ),
         selectedItemColor: const Color(0xFF391713),
         unselectedItemColor: const Color(0xFF848383),
         backgroundColor: const Color(0xFFF5F5F5),
@@ -263,37 +337,138 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 }
 
-class _CategoryCard extends StatelessWidget {
-  final String title;
-  final Color color;
-  final VoidCallback? onTap;
+class LegoSetCard extends StatelessWidget {
+  final LegoSetModel legoSet;
 
-  const _CategoryCard({required this.title, required this.color, this.onTap});
+  const LegoSetCard({super.key, required this.legoSet});
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
+    final priceText = legoSet.rentalPrice > 0
+        ? '${legoSet.rentalPrice.toStringAsFixed(0)} Ft/week'
+        : 'Ár nem megadva';
 
-    child: Container(
-      width: 100,
-      margin: const EdgeInsets.only(right: 12),
+    return Container(
       decoration: BoxDecoration(
-        color: color,
+        color: const Color(0xFFF3E9B5),
         borderRadius: BorderRadius.circular(16),
       ),
-      child: Center(
-        child: Text(
-          title,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Kép rész
+          AspectRatio(
+            aspectRatio: 1.1,
+            child: ClipRRect(
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(16),
+                topRight: Radius.circular(16),
+              ),
+              child: (legoSet.imgUrl != null && legoSet.imgUrl!.isNotEmpty)
+                  ? Image.network(
+                      legoSet.imgUrl!,
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                      loadingBuilder: (context, child, progress) {
+                        if (progress == null) return child;
+                        return const Center(
+                          child: CircularProgressIndicator(
+                            color: Color(0xFF391713),
+                            strokeWidth: 2,
+                          ),
+                        );
+                      },
+                      errorBuilder: (_, __, ___) => _buildPlaceholder(),
+                    )
+                  : _buildPlaceholder(),
+            ),
           ),
-          textAlign: TextAlign.center,
+          // Szöveg rész
+          Padding(
+            padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  legoSet.title,
+                  style: const TextStyle(
+                    color: Color(0xFF391713),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                if (legoSet.setNum != null && legoSet.setNum!.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    '#${legoSet.setNum}',
+                    style: const TextStyle(
+                      color: Color(0xFF848383),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+                if (legoSet.location.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      const Icon(Icons.location_on,
+                          size: 12, color: Color(0xFF848383)),
+                      const SizedBox(width: 2),
+                      Expanded(
+                        child: Text(
+                          legoSet.location,
+                          style: const TextStyle(
+                            color: Color(0xFF848383),
+                            fontSize: 11,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+                const SizedBox(height: 4),
+                Text(
+                  priceText,
+                  style: const TextStyle(
+                    color: Color(0xFF391713),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPlaceholder() {
+    return Container(
+      color: const Color(0xFFE8D5A3),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.extension, size: 36, color: Color(0xFF391713)),
+            if (legoSet.setNum != null && legoSet.setNum!.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Text(
+                legoSet.setNum!,
+                style: const TextStyle(
+                  color: Color(0xFF391713),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ],
         ),
       ),
-    ),
     );
   }
 }

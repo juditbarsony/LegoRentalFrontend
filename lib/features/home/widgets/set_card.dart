@@ -27,9 +27,9 @@ class SetCard extends StatelessWidget {
                   topLeft: Radius.circular(16),
                   topRight: Radius.circular(16),
                 ),
-                child: (set.imageUrl != null && set.imageUrl!.isNotEmpty)
+                child: (set.imgUrl != null && set.imgUrl!.isNotEmpty)
                     ? Image.network(
-                        set.imageUrl!,
+                        set.imgUrl!,
                         width: double.infinity,
                         fit: BoxFit.cover,
                         loadingBuilder: (context, child, progress) {
