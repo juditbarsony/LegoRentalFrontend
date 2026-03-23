@@ -1,26 +1,30 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:lego_rental_frontend/features/auth/auth_providers.dart';
-import 'package:lego_rental_frontend/features/sets/data/lego_set.dart';
+import 'package:lego_rental_frontend/core/models/lego_set_model.dart';
 import 'package:lego_rental_frontend/features/sets/data/sets_repository.dart';
 
 //import 'package:lego_rental_frontend/features/auth/auth_repository.dart'; // baseUrl miatt
 
 // Repo provider
 final setsRepositoryProvider = Provider<SetsRepository>((ref) {
-  const baseUrl = 'http://127.0.0.1:8000'; // nálad ami van
-  return SetsRepository(baseUrl, ref: ref);
+  return SetsRepository();
 });
+
 
 // State
 class SetsState {
   final bool isLoading;
   final String? error;
-  final List<LegoSet> items;
+  final List<LegoSetModel> items;
 
   const SetsState({this.isLoading = false, this.error, this.items = const []});
 
-  SetsState copyWith({bool? isLoading, String? error, List<LegoSet>? items}) {
+  SetsState copyWith({
+    bool? isLoading,
+    String? error,
+    List<LegoSetModel>? items,
+  }) {
     return SetsState(
       isLoading: isLoading ?? this.isLoading,
       error: error ?? this.error,
@@ -36,7 +40,7 @@ class SetsNotifier extends StateNotifier<SetsState> {
   final SetsRepository _repo;
   final Ref _ref;
 
-  Future<void> loadSets({String? keyword}) async {
+  Future<void> loadSets({String? keyword, int? themeId}) async {
     state = state.copyWith(isLoading: true, error: null);
 
     try {
@@ -46,17 +50,11 @@ class SetsNotifier extends StateNotifier<SetsState> {
         throw Exception('Nincs access token – jelentkezz be újra.');
       }
 
-      final sets = await _repo.loadSets(
-        keyword: keyword,
-        token: token,
-      );
+      final sets = await _repo.loadSets(keyword: keyword, themeId: themeId);
 
       state = state.copyWith(isLoading: false, items: sets);
     } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        error: e.toString(),
-      );
+      state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
 }

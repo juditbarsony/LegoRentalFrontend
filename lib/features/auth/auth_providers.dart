@@ -43,7 +43,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
     try {
       final token = await _authRepository.login(email: email, password: password);
-      await ApiService.saveToken(token);
+     // await ApiService.saveToken(token);
       final userJson = await _authRepository.getCurrentUser(token);
       final userName = userJson['full_name']?.toString() ?? userJson['email']?.toString() ?? email;
 
@@ -73,4 +73,4 @@ final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
   return AuthRepository();
-});
+}); 

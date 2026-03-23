@@ -1,6 +1,7 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
+//import 'dart:convert';
+//import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+
 
 class ApiService {
   static const String baseUrl = 'http://localhost:8000';
@@ -22,17 +23,17 @@ class ApiService {
     await prefs.remove('access_token');
   }
 
-  static Future<Map<String, String>> _authHeaders() async {
+  /* static Future<Map<String, String>> _authHeaders() async {
     final token = await getToken();
     return {
       'Content-Type': 'application/json',
       if (token != null) 'Authorization': 'Bearer $token',
     };
   }
-
+ */
   // ── AUTH ──
 
-  static Future<String> login(String username, String password) async {
+  /* static Future<String> login(String username, String password) async {
     final response = await http.post(
       Uri.parse('$baseUrl/auth/login'),
       headers: {'Content-Type': 'application/x-www-form-urlencoded'},
@@ -50,8 +51,8 @@ class ApiService {
     }
     throw Exception('Bejelentkezés sikertelen: ${response.statusCode}');
   }
-
-  static Future<Map<String, dynamic>> register({
+ */
+ /*  static Future<Map<String, dynamic>> register({
     required String email,
     required String fullName,
     required String password,
@@ -70,8 +71,8 @@ class ApiService {
     }
     throw Exception('Regisztráció sikertelen: ${response.statusCode}');
   }
-
-  static Future<Map<String, dynamic>> getMe() async {
+ */
+ /*  static Future<Map<String, dynamic>> getMe() async {
     final headers = await _authHeaders();
     final response = await http.get(
       Uri.parse('$baseUrl/auth/users/me'),
@@ -81,11 +82,11 @@ class ApiService {
       return jsonDecode(response.body) as Map<String, dynamic>;
     }
     throw Exception('Profil lekérés sikertelen: ${response.statusCode}');
-  }
+  } */
 
   // ── SETS ──
 
-  static Future<List<Map<String, dynamic>>> fetchSets({
+ /*  static Future<List<Map<String, dynamic>>> fetchSets({
     String? keyword,
     String? setNum,
     String? location,
@@ -133,11 +134,11 @@ class ApiService {
       return jsonDecode(response.body) as Map<String, dynamic>;
     }
     throw Exception('Set lekérés sikertelen: ${response.statusCode}');
-  }
+  } */
 
   // ── RENTALS ──
 
-  static Future<Map<String, dynamic>> createRental({
+  /* static Future<Map<String, dynamic>> createRental({
     required int legoSetId,
     required String startDate,
     required String endDate,
@@ -177,5 +178,5 @@ class ApiService {
       return data.cast<Map<String, dynamic>>();
     }
     throw Exception('Bérlések betöltése sikertelen: ${response.statusCode}');
-  }
+  } */
 }

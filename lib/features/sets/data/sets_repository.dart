@@ -1,69 +1,58 @@
 import 'dart:convert';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+//import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
-
-import 'lego_set.dart';
+import 'package:lego_rental_frontend/core/models/lego_set_model.dart';
+import 'package:lego_rental_frontend/core/services/api_service.dart';
+//import 'package:lego_rental_frontend/core/models/lego_set_model.dart';
 
 class SetsRepository {
   final http.Client _client;
-  final String baseUrl;
-  final Ref _ref;
 
-  SetsRepository(
-    this.baseUrl, {
-    http.Client? client,
-    required Ref ref,
-  })  : _client = client ?? http.Client(),
-        _ref = ref;
+  SetsRepository({http.Client? client}) : _client = client ?? http.Client();
 
   Future<Map<String, String>> _authHeaders(String token) async {
-  return {
-    'Content-Type': 'application/json',
-    'Authorization': 'Bearer $token',
-  };
-}
-
-Future<LegoSet> getSetById(int id, String token) async {
-  final uri = Uri.parse('$baseUrl/sets/$id');
-  final response = await _client.get(
-    uri,
-    headers: await _authHeaders(token),
-  );
-
-  if (response.statusCode == 200) {
-    final jsonMap = jsonDecode(response.body) as Map<String, dynamic>;
-    return LegoSet.fromJson(jsonMap);
-  } else {
-    throw Exception('Nem sikerült lekérni a készletet: ${response.statusCode}');
+    return {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $token',
+    };
   }
-}
 
-Future<List<LegoSet>> loadSets({
-  String? keyword,
-  required String token,
-}) async {
-  final uri = Uri.parse('$baseUrl/sets/').replace(
-    queryParameters: {
+  Future<LegoSetModel> getSetById(int id, String token) async {
+    final uri = Uri.parse('${ApiService.baseUrl}/sets/$id');
+    final response = await _client.get(uri, headers: await _authHeaders(token));
+
+    if (response.statusCode == 200) {
+      final jsonMap = jsonDecode(response.body) as Map<String, dynamic>;
+      return LegoSetModel.fromJson(jsonMap);
+    } else {
+      throw Exception(
+        'Nem sikerült lekérni a készletet: ${response.statusCode}',
+      );
+    }
+  }
+
+  Future<List<LegoSetModel>> loadSets({String? keyword, int? themeId}) async {
+    final token = await ApiService.getToken();
+    if (token == null) throw Exception('Nincs access token');
+    final params = {
       'public': 'true',
       if (keyword != null && keyword.isNotEmpty) 'keyword': keyword,
-    },
-  );
+      if (themeId != null) 'theme_id': themeId.toString(),
+    };
+    final uri = Uri.parse(
+      '${ApiService.baseUrl}/sets/',
+    ).replace(queryParameters: params);
+    final response = await _client.get(uri, headers: await _authHeaders(token));
 
-  final response = await _client.get(
-    uri,
-    headers: await _authHeaders(token),
-  );
-
-  if (response.statusCode == 200) {
-    final jsonList = jsonDecode(response.body) as List<dynamic>;
-    return jsonList
-        .map((e) => LegoSet.fromJson(e as Map<String, dynamic>))
-        .toList();
-  } else {
-    throw Exception('Nem sikerült lekérni a készletlistát: ${response.statusCode}');
+    if (response.statusCode == 200) {
+      final jsonList = jsonDecode(response.body) as List<dynamic>;
+      return jsonList
+          .map((e) => LegoSetModel.fromJson(e as Map<String, dynamic>))
+          .toList();
+    } else {
+      throw Exception(
+        'Nem sikerült lekérni a készletlistát: ${response.statusCode}',
+      );
+    }
   }
 }
-
-}
-
-

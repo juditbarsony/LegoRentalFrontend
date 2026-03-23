@@ -1,13 +1,13 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
+import '../../core/services/api_service.dart';
+
 /// Ezt állítsd be a saját backend URL-edre:
 /// Emulatorról általában: http://10.0.2.2:8000
 /// Ha fizikai eszköz, akkor a géped lokális IP-je (pl. http://192.168.0.10:8000)
-//const String baseUrl = 'http://192.168.1.67:8000/docs';
-const String baseUrl = 'http://localhost:8000';
 
-//debugPrint('URL: $baseUrl/auth/login');
+
 
 class AuthRepository {
   final http.Client _client;
@@ -18,7 +18,7 @@ class AuthRepository {
     required String email,
     required String password,
   }) async {
-    final url = Uri.parse('$baseUrl/auth/login');
+    final url = Uri.parse('${ApiService.baseUrl}/auth/login');
 
     final response = await _client.post(
       url,
@@ -52,8 +52,31 @@ class AuthRepository {
     }
   }
 
+  Future<Map<String, dynamic>> register({
+  required String email,
+  required String fullName,
+  required String password,
+}) async {
+  final url = Uri.parse('${ApiService.baseUrl}/auth/register');
+  final response = await _client.post(
+    url,
+    headers: {'Content-Type': 'application/json'},
+    body: jsonEncode({
+      'email': email,
+      'full_name': fullName,
+      'password': password,
+    }),
+  );
+  if (response.statusCode == 201) {
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+  throw Exception('Regisztráció sikertelen: ${response.statusCode}');
+}
+
+
+
   Future<Map<String, dynamic>> getCurrentUser(String accessToken) async {
-    final url = Uri.parse('$baseUrl/auth/users/me');
+    final url = Uri.parse('${ApiService.baseUrl}/auth/users/me');
 
     final response = await _client.get(
       url,

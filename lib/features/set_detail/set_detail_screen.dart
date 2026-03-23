@@ -4,7 +4,7 @@ import 'package:lego_rental_frontend/core/widgets/app_background.dart';
 import 'package:lego_rental_frontend/features/home/home_screen.dart';
 import 'package:lego_rental_frontend/features/main/main_screen.dart';
 import 'package:lego_rental_frontend/features/set_detail/set_detail_providers.dart';
-import 'package:lego_rental_frontend/features/sets/data/lego_set.dart';
+import 'package:lego_rental_frontend/core/models/lego_set_model.dart';
 
 class SetDetailScreen extends ConsumerStatefulWidget {
   const SetDetailScreen({super.key});
@@ -604,7 +604,7 @@ class _AvailabilityCalendarState extends State<_AvailabilityCalendar> {
 }
 
 class _SetDetailContent extends StatelessWidget {
-  final LegoSet set;
+  final LegoSetModel set;
 
   const _SetDetailContent({required this.set});
 

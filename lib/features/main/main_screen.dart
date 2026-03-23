@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
-//import 'package:lego_rental_frontend/features/home/home_screen.dart';
-//import 'package:lego_rental_frontend/features/home/home_screen.dart';
+
 import 'package:lego_rental_frontend/features/search/search_screen.dart';
 import 'package:lego_rental_frontend/features/upload/upload_screen.dart';
 import 'package:lego_rental_frontend/features/scan/scan_screen.dart';
 import 'package:lego_rental_frontend/features/messages/messages_screen.dart';
 import 'package:lego_rental_frontend/features/profile/profile_screen.dart';
-//import 'package:lego_rental_frontend/features/set_detail/set_detail_screen.dart';
+
 
 
 

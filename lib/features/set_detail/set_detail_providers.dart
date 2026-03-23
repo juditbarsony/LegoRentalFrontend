@@ -2,13 +2,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:lego_rental_frontend/features/auth/auth_providers.dart';
-import 'package:lego_rental_frontend/features/sets/data/lego_set.dart';
+import 'package:lego_rental_frontend/core/models/lego_set_model.dart';
 import 'package:lego_rental_frontend/features/sets/data/sets_repository.dart';
 import 'package:lego_rental_frontend/features/sets/sets/sets_providers.dart'; // repo providerhez
 
 class SetDetailState {
   final bool isLoading;
-  final LegoSet? set;
+  final LegoSetModel? set;
   final String? errorMessage;
 
   SetDetailState({
@@ -19,7 +19,7 @@ class SetDetailState {
 
   SetDetailState copyWith({
     bool? isLoading,
-    LegoSet? set,
+    LegoSetModel? set,
     String? errorMessage,
   }) {
     return SetDetailState(
