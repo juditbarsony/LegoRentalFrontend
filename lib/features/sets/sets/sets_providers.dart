@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
-import 'package:lego_rental_frontend/features/auth/auth_providers.dart';
+//import 'package:lego_rental_frontend/features/auth/auth_providers.dart';
 import 'package:lego_rental_frontend/core/models/lego_set_model.dart';
 import 'package:lego_rental_frontend/features/sets/data/sets_repository.dart';
 
@@ -10,7 +10,6 @@ import 'package:lego_rental_frontend/features/sets/data/sets_repository.dart';
 final setsRepositoryProvider = Provider<SetsRepository>((ref) {
   return SetsRepository();
 });
-
 
 // State
 class SetsState {
@@ -35,23 +34,14 @@ class SetsState {
 
 // Notifier
 class SetsNotifier extends StateNotifier<SetsState> {
-  SetsNotifier(this._repo, this._ref) : super(const SetsState());
+  SetsNotifier(this._repo) : super(const SetsState());
 
   final SetsRepository _repo;
-  final Ref _ref;
 
   Future<void> loadSets({String? keyword, int? themeId}) async {
     state = state.copyWith(isLoading: true, error: null);
-
     try {
-      final authState = _ref.read(authProvider);
-      final token = authState.accessToken;
-      if (token == null) {
-        throw Exception('Nincs access token – jelentkezz be újra.');
-      }
-
       final sets = await _repo.loadSets(keyword: keyword, themeId: themeId);
-
       state = state.copyWith(isLoading: false, items: sets);
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
@@ -62,5 +52,5 @@ class SetsNotifier extends StateNotifier<SetsState> {
 // Provider
 final setsProvider = StateNotifierProvider<SetsNotifier, SetsState>((ref) {
   final repo = ref.watch(setsRepositoryProvider);
-  return SetsNotifier(repo, ref);
+  return SetsNotifier(repo);
 });

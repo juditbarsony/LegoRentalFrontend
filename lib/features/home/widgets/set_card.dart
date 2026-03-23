@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lego_rental_frontend/core/models/lego_set_model.dart';
 
 class SetCard extends StatelessWidget {
-  final LegoSetModel? set;
+  final LegoSetModel set;
   final VoidCallback? onTap;
 
   const SetCard({super.key, required this.set, this.onTap});

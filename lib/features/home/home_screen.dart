@@ -1,23 +1,22 @@
 import 'package:flutter/material.dart';
-import 'package:lego_rental_frontend/core/models/lego_set_model.dart';
+//import 'package:lego_rental_frontend/core/models/lego_set_model.dart';
 //import 'package:lego_rental_frontend/core/services/api_service.dart';
 import 'package:lego_rental_frontend/core/widgets/app_background.dart';
-//import 'package:lego_rental_frontend/features/main/main_screen.dart';
+import 'package:lego_rental_frontend/features/main/main_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lego_rental_frontend/features/sets/sets/sets_providers.dart';
+import 'package:lego_rental_frontend/features/home/widgets/set_card.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+ConsumerState<HomeScreen> createState() => _HomeScreenState();
+
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   final TextEditingController _searchController = TextEditingController();
-  List<LegoSetModel> _sets = [];
-  bool _isLoading = true;
-  String? _error;
   int? _selectedThemeId;
 
   static const List<Map<String, dynamic>> _categories = [
@@ -63,6 +62,7 @@ void _loadSets({String? keyword, int? themeId}) {
 
   @override
   Widget build(BuildContext context) {
+    final setsState = ref.watch(setsProvider);
     return Scaffold(
       backgroundColor: const Color(0xFFF5CB58),
       body: AppBackground(
@@ -249,7 +249,7 @@ void _loadSets({String? keyword, int? themeId}) {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          _error!,
+                            setsState.error!,
                           style: const TextStyle(color: Colors.red),
                           textAlign: TextAlign.center,
                         ),
@@ -284,7 +284,7 @@ void _loadSets({String? keyword, int? themeId}) {
                     childAspectRatio: 0.72,
                   ),
                   itemBuilder: (context, index) {
-                    return LegoSetCard(legoSet: setsState.items[index]);
+                    return SetCard(set: setsState.items[index]);
                   },
                 ),
             ],
@@ -319,141 +319,4 @@ void _loadSets({String? keyword, int? themeId}) {
   }
 }
 
-class LegoSetCard extends StatelessWidget {
-  final LegoSetModel legoSetModel;
 
-  const LegoSetCard({super.key, required this.legoSetModel});
-
-  @override
-  Widget build(BuildContext context) {
-    final priceText = legoSet.rentalPrice > 0
-        ? '${legoSet.rentalPrice.toStringAsFixed(0)} Ft/week'
-        : 'Ár nem megadva';
-
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFFF3E9B5),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Kép rész
-          AspectRatio(
-            aspectRatio: 1.1,
-            child: ClipRRect(
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(16),
-                topRight: Radius.circular(16),
-              ),
-              child: (legoSet.imgUrl != null && legoSet.imgUrl!.isNotEmpty)
-                  ? Image.network(
-                      legoSet.imgUrl!,
-                      fit: BoxFit.cover,
-                      width: double.infinity,
-                      loadingBuilder: (context, child, progress) {
-                        if (progress == null) return child;
-                        return const Center(
-                          child: CircularProgressIndicator(
-                            color: Color(0xFF391713),
-                            strokeWidth: 2,
-                          ),
-                        );
-                      },
-                      errorBuilder: (_, __, ___) => _buildPlaceholder(),
-                    )
-                  : _buildPlaceholder(),
-            ),
-          ),
-          // Szöveg rész
-          Padding(
-            padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  legoSet.title,
-                  style: const TextStyle(
-                    color: Color(0xFF391713),
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                if (legoSet.setNum != null && legoSet.setNum!.isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    '#${legoSet.setNum}',
-                    style: const TextStyle(
-                      color: Color(0xFF848383),
-                      fontSize: 11,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-                if (legoSet.location.isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.location_on,
-                        size: 12,
-                        color: Color(0xFF848383),
-                      ),
-                      const SizedBox(width: 2),
-                      Expanded(
-                        child: Text(
-                          legoSet.location,
-                          style: const TextStyle(
-                            color: Color(0xFF848383),
-                            fontSize: 11,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-                const SizedBox(height: 4),
-                Text(
-                  priceText,
-                  style: const TextStyle(
-                    color: Color(0xFF391713),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPlaceholder() {
-    return Container(
-      color: const Color(0xFFE8D5A3),
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.extension, size: 36, color: Color(0xFF391713)),
-            if (legoSet.setNum != null && legoSet.setNum!.isNotEmpty) ...[
-              const SizedBox(height: 4),
-              Text(
-                legoSet.setNum!,
-                style: const TextStyle(
-                  color: Color(0xFF391713),
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-}
