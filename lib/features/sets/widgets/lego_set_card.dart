@@ -2,14 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:lego_rental_frontend/core/models/lego_set_model.dart';
 
 class LegoSetCard extends StatelessWidget {
-  final LegoSetModel? set; 
-  final VoidCallback? onTap;
+  final LegoSetModel set;
+  const LegoSetCard({super.key, required this.set, this.onTap});
 
-  const LegoSetCard({
-    super.key,
-    required this.set,
-    this.onTap,
-  });
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -25,15 +21,26 @@ class LegoSetCard extends StatelessWidget {
         child: Row(
           children: [
             // Bal oldali kép placeholder
-            Container(
-              width: 100,
-              height: 100,
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Center(
-                child: Icon(Icons.image, size: 40, color: Colors.grey),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: SizedBox(
+                width: 100,
+                height: 100,
+                child: (set.imgUrl != null && set.imgUrl!.isNotEmpty)
+                    ? Image.network(
+                        set.imgUrl!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => const Icon(
+                          Icons.extension,
+                          size: 36,
+                          color: Color(0xFF391713),
+                        ),
+                      )
+                    : const Icon(
+                        Icons.extension,
+                        size: 36,
+                        color: Color(0xFF391713),
+                      ),
               ),
             ),
             const SizedBox(width: 12),
