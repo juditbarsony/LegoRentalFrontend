@@ -1,9 +1,8 @@
 import 'dart:convert';
-//import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:lego_rental_frontend/core/models/lego_set_model.dart';
 import 'package:lego_rental_frontend/core/services/api_service.dart';
-//import 'package:lego_rental_frontend/core/models/lego_set_model.dart';
+
 
 class SetsRepository {
   final http.Client _client;
@@ -31,9 +30,11 @@ class SetsRepository {
     }
   }
 
-  Future<List<LegoSetModel>> loadSets({String? keyword, int? themeId}) async {
-    final token = await ApiService.getToken();
-    if (token == null) throw Exception('Nincs access token');
+  Future<List<LegoSetModel>> loadSets({
+    String? keyword,
+    int? themeId,
+    required String token,
+  }) async {
     final params = {
       'public': 'true',
       if (keyword != null && keyword.isNotEmpty) 'keyword': keyword,

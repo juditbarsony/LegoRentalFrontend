@@ -21,11 +21,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     _passwordController.dispose();
     super.dispose();
   }
-
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
 
+    ref.listen<AuthState>(authProvider, (previous, next) {
+      if (next.userName != null && next.accessToken != null) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const HomeScreen()),
+        );
+      }
+    });
     return Scaffold(
       backgroundColor: const Color(0xFFF5CB58),
       body: AppBackground(
@@ -134,26 +141,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       onPressed: () async {
                         final email = _emailController.text;
                         final password = _passwordController.text;
-                        
                         await ref
                             .read(authProvider.notifier)
                             .login(email, password);
-
-                          await ref
-                            .read(authProvider.notifier)
-                            .login(email, password);
-
-                        // Ideiglenesen: ha van userName, navigáljunk Home-ra
-                        final authState = ref.read(authProvider);
-                        if (authState.userName != null) {
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const HomeScreen(),
-                            ),
-                          );
-                        } 
-
+                        // navigáció a ref.listen kezeli
                       },
                       child: const Text(
                         'Log In',

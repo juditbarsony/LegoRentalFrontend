@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:lego_rental_frontend/features/auth/auth_repository.dart';
-import 'package:lego_rental_frontend/core/services/api_service.dart'; 
+//import 'package:lego_rental_frontend/core/services/api_service.dart'; 
 
 
 class AuthState {

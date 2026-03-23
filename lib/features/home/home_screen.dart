@@ -31,7 +31,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _loadSets();
+    Future.microtask(() => _loadSets()); 
   }
 
   @override

@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lego_rental_frontend/core/widgets/app_background.dart';
 import 'package:lego_rental_frontend/features/home/home_screen.dart';
+import 'package:lego_rental_frontend/features/set_detail/set_detail_screen.dart';
 import 'package:lego_rental_frontend/features/sets/sets/sets_providers.dart';
 import 'package:lego_rental_frontend/features/sets/widgets/lego_set_card.dart';
-
 
 class SearchScreen extends ConsumerStatefulWidget {
   const SearchScreen({super.key});
@@ -32,7 +32,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     super.initState();
     // első betöltés: keyword nélkül
     Future.microtask(() {
-     // ref.read(setsProvider.notifier).loadSets(); kelleni fog!!!!
+      ref.read(setsProvider.notifier).loadSets();
     });
   }
 
@@ -223,12 +223,15 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   itemCount: setsState.items.length,
                   itemBuilder: (context, index) {
                     final set = setsState.items[index];
-                    return LegoSetCard(set: set,onTap: () 
-                    {
-                        Navigator.pushNamed(
+                    return LegoSetCard(
+                      set: set,
+                      onTap: () {
+                        Navigator.push(
                           context,
-                          '/set-detail',
-                          arguments: set.id,
+                          MaterialPageRoute(
+                            builder: (_) => const SetDetailScreen(),
+                            settings: RouteSettings(arguments: set.id),
+                          ),
                         );
                       },
                     );
