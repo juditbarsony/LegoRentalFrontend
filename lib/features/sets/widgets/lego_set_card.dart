@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lego_rental_frontend/core/models/lego_set_model.dart';
+import 'package:lego_rental_frontend/core/services/api_service.dart';
 
 class LegoSetCard extends StatelessWidget {
   final LegoSetModel set;
@@ -9,13 +10,18 @@ class LegoSetCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+
+    final imageUrl = set.imgUrl != null
+        ? '${ApiService.baseUrl}/proxy/image?url=${Uri.encodeComponent(set.imgUrl!)}'
+        : null;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 8),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: const Color(0xFFF3E9B5),
+          color: const Color.fromARGB(255, 235, 235, 235),
           borderRadius: BorderRadius.circular(16),
         ),
         child: Row(
@@ -26,21 +32,29 @@ class LegoSetCard extends StatelessWidget {
               child: SizedBox(
                 width: 100,
                 height: 100,
-                child: (set.imgUrl != null && set.imgUrl!.isNotEmpty)
-                    ? Image.network(
-                        set.imgUrl!,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => const Icon(
-                          Icons.extension,
-                          size: 36,
-                          color: Color(0xFF391713),
-                        ),
-                      )
-                    : const Icon(
-                        Icons.extension,
-                        size: 36,
-                        color: Color(0xFF391713),
-                      ),
+                child: Builder(
+                  builder: (context) {
+                    final imageUrl =
+                        set.imgUrl != null && set.imgUrl!.isNotEmpty
+                        ? '${ApiService.baseUrl}/proxy/image?url=${Uri.encodeComponent(set.imgUrl!)}'
+                        : null;
+                    return (imageUrl != null)
+                        ? Image.network(
+                            imageUrl,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => const Icon(
+                              Icons.extension,
+                              size: 36,
+                              color: Color(0xFF391713),
+                            ),
+                          )
+                        : const Icon(
+                            Icons.extension,
+                            size: 36,
+                            color: Color(0xFF391713),
+                          );
+                  },
+                ),
               ),
             ),
             const SizedBox(width: 12),

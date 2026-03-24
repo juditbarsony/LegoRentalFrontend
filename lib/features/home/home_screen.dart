@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:lego_rental_frontend/core/widgets/app_background.dart';
 import 'package:lego_rental_frontend/features/main/main_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lego_rental_frontend/features/set_detail/set_detail_screen.dart';
 import 'package:lego_rental_frontend/features/sets/sets/sets_providers.dart';
 import 'package:lego_rental_frontend/features/home/widgets/set_card.dart';
 
@@ -11,8 +12,7 @@ class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-ConsumerState<HomeScreen> createState() => _HomeScreenState();
-
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
@@ -31,7 +31,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    Future.microtask(() => _loadSets()); 
+    Future.microtask(() => _loadSets());
   }
 
   @override
@@ -40,12 +40,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     super.dispose();
   }
 
-void _loadSets({String? keyword, int? themeId}) {
-  ref.read(setsProvider.notifier).loadSets(
-    keyword: keyword,
-    themeId: themeId,
-  );
-}
+  void _loadSets({String? keyword, int? themeId}) {
+    ref
+        .read(setsProvider.notifier)
+        .loadSets(keyword: keyword, themeId: themeId);
+  }
+
   void _onSearch(String value) {
     _loadSets(keyword: value.trim(), themeId: _selectedThemeId);
   }
@@ -63,6 +63,7 @@ void _loadSets({String? keyword, int? themeId}) {
   @override
   Widget build(BuildContext context) {
     final setsState = ref.watch(setsProvider);
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5CB58),
       body: AppBackground(
@@ -249,7 +250,7 @@ void _loadSets({String? keyword, int? themeId}) {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                            setsState.error!,
+                          setsState.error!,
                           style: const TextStyle(color: Colors.red),
                           textAlign: TextAlign.center,
                         ),
@@ -276,7 +277,7 @@ void _loadSets({String? keyword, int? themeId}) {
                 GridView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  itemCount:setsState.items.length,
+                  itemCount: setsState.items.length,
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
                     mainAxisSpacing: 12,
@@ -284,7 +285,19 @@ void _loadSets({String? keyword, int? themeId}) {
                     childAspectRatio: 0.72,
                   ),
                   itemBuilder: (context, index) {
-                    return SetCard(set: setsState.items[index]);
+                    return SetCard(
+                      set: setsState.items[index],
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => SetDetailScreen(
+                              setId: setsState.items[index].id,
+                            ),
+                          ),
+                        );
+                      },
+                    );
                   },
                 ),
             ],
@@ -318,5 +331,3 @@ void _loadSets({String? keyword, int? themeId}) {
     );
   }
 }
-
-

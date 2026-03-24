@@ -1,4 +1,5 @@
 //import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:lego_rental_frontend/features/auth/auth_providers.dart';
@@ -11,11 +12,7 @@ class SetDetailState {
   final LegoSetModel? set;
   final String? errorMessage;
 
-  SetDetailState({
-    this.isLoading = false,
-    this.set,
-    this.errorMessage,
-  });
+  SetDetailState({this.isLoading = false, this.set, this.errorMessage});
 
   SetDetailState copyWith({
     bool? isLoading,
@@ -41,6 +38,10 @@ class SetDetailNotifier extends StateNotifier<SetDetailState> {
     try {
       final authState = _ref.read(authProvider);
       final token = authState.accessToken;
+
+      debugPrint('TOKEN: $token'); // ← ADD HOZZÁ
+      debugPrint('SET ID: $id'); // ← ADD HOZZÁ
+
       if (token == null) {
         throw Exception('Nincs access token – jelentkezz be újra.');
       }
@@ -48,16 +49,13 @@ class SetDetailNotifier extends StateNotifier<SetDetailState> {
       final result = await _repo.getSetById(id, token);
       state = SetDetailState(isLoading: false, set: result);
     } catch (e) {
-      state = SetDetailState(
-        isLoading: false,
-        errorMessage: e.toString(),
-      );
+      state = SetDetailState(isLoading: false, errorMessage: e.toString());
     }
   }
 }
 
 final setDetailProvider =
-    StateNotifierProvider.autoDispose<SetDetailNotifier, SetDetailState>((ref) {
-  final repo = ref.watch(setsRepositoryProvider);
-  return SetDetailNotifier(repo, ref);
-});
+    StateNotifierProvider<SetDetailNotifier, SetDetailState>((ref) {
+      final repo = ref.watch(setsRepositoryProvider);
+      return SetDetailNotifier(repo, ref);
+    });
