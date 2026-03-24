@@ -6,12 +6,16 @@ import 'package:lego_rental_frontend/features/main/main_screen.dart';
 import 'package:lego_rental_frontend/features/set_detail/set_detail_providers.dart';
 import 'package:lego_rental_frontend/core/models/lego_set_model.dart';
 
+
 class SetDetailScreen extends ConsumerStatefulWidget {
-  const SetDetailScreen({super.key});
+  final int setId;  // ← ADD HOZZÁ
+  const SetDetailScreen({super.key, required this.setId});  // ← MÓDOSÍTSD
 
   @override
   ConsumerState<SetDetailScreen> createState() => _SetDetailScreenState();
 }
+
+
 
 class _SetDetailScreenState extends ConsumerState<SetDetailScreen> {
   int? _setId;
@@ -20,15 +24,16 @@ class _SetDetailScreenState extends ConsumerState<SetDetailScreen> {
   bool scanBeforeReturning = false;
   int? _setIdLoaded;
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final args = ModalRoute.of(context)?.settings.arguments;
-    if (args is int && _setIdLoaded == null) {
-      _setIdLoaded = args;
-      ref.read(setDetailProvider.notifier).load(args);
-    }
-  }
+
+
+@override
+void initState() {
+  super.initState();
+  Future.microtask(() =>
+    ref.read(setDetailProvider.notifier).load(widget.setId)
+  );
+}
+
 
   @override
   Widget build(BuildContext context) {

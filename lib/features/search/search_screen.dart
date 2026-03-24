@@ -229,8 +229,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => const SetDetailScreen(),
-                            settings: RouteSettings(arguments: set.id),
+                            builder: (_) => SetDetailScreen(
+                              setId: set.id,
+                            ), 
                           ),
                         );
                       },
