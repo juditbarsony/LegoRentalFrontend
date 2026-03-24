@@ -20,7 +20,7 @@ class RentalScreen extends ConsumerWidget {
       '${d.year}.${d.month.toString().padLeft(2, '0')}.${d.day.toString().padLeft(2, '0')}';
 
   int get _days => endDate.difference(startDate).inDays + 1;
-  double get _totalPrice => set.rentalPrice * _days;
+  double get _totalPrice => (set.rentalPrice * _days) + set.deposit;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -31,7 +31,7 @@ class RentalScreen extends ConsumerWidget {
       if (next.success) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Bérlés sikeresen igényelve!'),
+            content: Text('Rental !'),
             backgroundColor: Colors.green,
           ),
         );
@@ -43,7 +43,7 @@ class RentalScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFF5CB58),
       body: AppBackground(
-        title: 'Bérlés megerősítése',
+        title: 'Confirm Rental',
         onBack: () => Navigator.pop(context),
         onHome: null,
         child: SafeArea(
@@ -55,15 +55,22 @@ class RentalScreen extends ConsumerWidget {
                 const SizedBox(height: 16),
 
                 // ── Set neve ─────────────────────────────────────────
-                const Text('Készlet',
-                    style: TextStyle(
-                        color: Color(0xFF391713),
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600)),
+                const Text(
+                  'Set',
+                  style: TextStyle(
+                    color: Color(0xFF391713),
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
                 const SizedBox(height: 4),
-                Text(set.title,
-                    style: const TextStyle(
-                        color: Color(0xFF252525), fontSize: 15)),
+                Text(
+                  set.title,
+                  style: const TextStyle(
+                    color: Color(0xFF252525),
+                    fontSize: 15,
+                  ),
+                ),
                 const SizedBox(height: 16),
 
                 // ── Összefoglaló kártya ───────────────────────────────
@@ -77,20 +84,24 @@ class RentalScreen extends ConsumerWidget {
                   ),
                   child: Column(
                     children: [
-                      _summaryRow('Kezdő dátum', _formatDate(startDate)),
+                      _summaryRow('Start date', _formatDate(startDate)),
                       const Divider(),
-                      _summaryRow('Záró dátum', _formatDate(endDate)),
+                      _summaryRow('End date', _formatDate(endDate)),
                       const Divider(),
-                      _summaryRow('Napok száma', '$_days nap'),
-                      const Divider(),
-                      _summaryRow('Bérleti díj / nap',
-                          '${set.rentalPrice.toStringAsFixed(0)} Ft'),
-                      const Divider(),
-                      _summaryRow('Kaució',
-                          '${set.deposit.toStringAsFixed(0)} Ft'),
+                      _summaryRow('Number of days', '$_days days'),
                       const Divider(),
                       _summaryRow(
-                        'Összesen',
+                        'Rental price / day',
+                        '${set.rentalPrice.toStringAsFixed(0)} Ft',
+                      ),
+                      const Divider(),
+                      _summaryRow(
+                        'Deposit',
+                        '${set.deposit.toStringAsFixed(0)} Ft',
+                      ),
+                      const Divider(),
+                      _summaryRow(
+                        'Total (rental + deposit)',
                         '${_totalPrice.toStringAsFixed(0)} Ft',
                         bold: true,
                       ),
@@ -109,14 +120,19 @@ class RentalScreen extends ConsumerWidget {
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.info_outline,
-                          color: Color(0xFF856404), size: 18),
+                      const Icon(
+                        Icons.info_outline,
+                        color: Color(0xFF856404),
+                        size: 18,
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          'A kaució (${set.deposit.toStringAsFixed(0)} Ft) visszafizetésre kerül a készlet visszaadásakor.',
+                          'The deposit (${set.deposit.toStringAsFixed(0)} Ft) will be refunded upon return of the set.',
                           style: const TextStyle(
-                              color: Color(0xFF856404), fontSize: 12),
+                            color: Color(0xFF856404),
+                            fontSize: 12,
+                          ),
                         ),
                       ),
                     ],
@@ -149,7 +165,8 @@ class RentalScreen extends ConsumerWidget {
                       backgroundColor: const Color(0xFFFFC107),
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(13)),
+                        borderRadius: BorderRadius.circular(13),
+                      ),
                     ),
                     onPressed: state.isLoading
                         ? null
@@ -165,11 +182,12 @@ class RentalScreen extends ConsumerWidget {
                     child: state.isLoading
                         ? const CircularProgressIndicator(color: Colors.white)
                         : const Text(
-                            'Bérlés megerősítése',
+                            'Confirm Rental',
                             style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.black),
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black,
+                            ),
                           ),
                   ),
                 ),
@@ -182,14 +200,14 @@ class RentalScreen extends ConsumerWidget {
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(13)),
+                        borderRadius: BorderRadius.circular(13),
+                      ),
                       side: const BorderSide(color: Color(0xFF391713)),
                     ),
                     onPressed: () => Navigator.pop(context),
                     child: const Text(
-                      'Mégsem',
-                      style: TextStyle(
-                          fontSize: 16, color: Color(0xFF391713)),
+                      'Cancel',
+                      style: TextStyle(fontSize: 16, color: Color(0xFF391713)),
                     ),
                   ),
                 ),
@@ -202,22 +220,28 @@ class RentalScreen extends ConsumerWidget {
     );
   }
 
-    Widget _summaryRow(String label, String value, {bool bold = false}) {
+  Widget _summaryRow(String label, String value, {bool bold = false}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label,
-              style: TextStyle(
-                  color: const Color(0xFF252525),
-                  fontSize: 14,
-                  fontWeight: bold ? FontWeight.w700 : FontWeight.normal)),
-          Text(value,
-              style: TextStyle(
-                  color: const Color(0xFF391713),
-                  fontSize: 14,
-                  fontWeight: bold ? FontWeight.w700 : FontWeight.normal)),
+          Text(
+            label,
+            style: TextStyle(
+              color: const Color(0xFF252525),
+              fontSize: 14,
+              fontWeight: bold ? FontWeight.w700 : FontWeight.normal,
+            ),
+          ),
+          Text(
+            value,
+            style: TextStyle(
+              color: const Color(0xFF391713),
+              fontSize: 14,
+              fontWeight: bold ? FontWeight.w700 : FontWeight.normal,
+            ),
+          ),
         ],
       ),
     );
