@@ -16,7 +16,8 @@ class SearchScreen extends ConsumerStatefulWidget {
 class _SearchScreenState extends ConsumerState<SearchScreen> {
   String? selectedCategory;
   String? selectedStatus;
-  String? selectedPrice;
+  final double _maxPrice = 5000;
+  RangeValues _priceRange = const RangeValues(0, 5000);
   String? selectedLocation;
 
   final _searchController = TextEditingController();
@@ -101,9 +102,10 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               const SizedBox(height: 12),
 
               // Category dropdown
-              _FilterDropdown(
+              FilterDropdown(
                 label: 'Category',
                 value: selectedCategory,
+                items: const ['City', 'Technic', 'Star Wars', 'Basic', 'Creator','Other'], 
                 onChanged: (value) {
                   setState(() {
                     selectedCategory = value;
@@ -114,40 +116,64 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               const SizedBox(height: 12),
 
               // Status dropdown
-              _FilterDropdown(
+              FilterDropdown(
                 label: 'Status',
                 value: selectedStatus,
-                onChanged: (value) {
-                  setState(() {
-                    selectedStatus = value;
-                  });
-                },
+                items: const ['NEW', 'USED', 'TRASH'],
+                onChanged: (value) => setState(() => selectedStatus = value),
               ),
 
               const SizedBox(height: 12),
 
-              // Price dropdown
-              _FilterDropdown(
-                label: 'Price',
-                value: selectedPrice,
-                onChanged: (value) {
-                  setState(() {
-                    selectedPrice = value;
-                  });
-                },
+              // Price csúszka
+              const Text(
+                'Price per day',
+                style: TextStyle(
+                  color: Color(0xFF391713),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    '${_priceRange.start.toInt()} Ft',
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                  Text(
+                    _priceRange.end >= 5000
+                        ? '5000 Ft >'
+                        : '${_priceRange.end.toInt()} Ft',
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                ],
+              ),
+              RangeSlider(
+                values: _priceRange,
+                min: 0,
+                max: 5000,
+                divisions: 20,
+                activeColor: const Color(0xFF391713),
+                inactiveColor: Colors.grey[300],
+                onChanged: (values) => setState(() => _priceRange = values),
               ),
 
               const SizedBox(height: 12),
 
               // Location dropdown
-              _FilterDropdown(
+              FilterDropdown(
                 label: 'Location',
                 value: selectedLocation,
-                onChanged: (value) {
-                  setState(() {
-                    selectedLocation = value;
-                  });
-                },
+                items: const [
+                  'Budapest',
+                  'Debrecen',
+                  'Miskolc',
+                  'Pécs',
+                  'Győr',
+                ],
+                onChanged: (value) => setState(() => selectedLocation = value),
               ),
 
               const SizedBox(height: 24),
@@ -166,7 +192,17 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                     ),
                   ),
                   onPressed: () {
-                    // TODO: filter logic
+                    final keyword = _searchController.text.trim();
+                    ref
+                        .read(setsProvider.notifier)
+                        .loadSets(
+                          keyword: keyword.isEmpty ? null : keyword,
+                          state: selectedStatus,
+                          location: selectedLocation,
+                          maxPrice: _priceRange.end >= 5000
+                              ? null
+                              : _priceRange.end,
+                        );
                   },
                   child: const Text(
                     'Apply',
@@ -229,9 +265,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => SetDetailScreen(
-                              setId: set.id,
-                            ), 
+                            builder: (_) => SetDetailScreen(setId: set.id),
                           ),
                         );
                       },
@@ -278,14 +312,16 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   }
 }
 
-class _FilterDropdown extends StatelessWidget {
+class FilterDropdown extends StatelessWidget {
   final String label;
   final String? value;
+  final List<String> items;
   final ValueChanged<String?> onChanged;
 
-  const _FilterDropdown({
+  const FilterDropdown({super.key, 
     required this.label,
     required this.value,
+    required this.items,
     required this.onChanged,
   });
 
@@ -295,20 +331,36 @@ class _FilterDropdown extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       decoration: BoxDecoration(
         color: Colors.white,
-        border: Border(bottom: BorderSide(color: Colors.grey[400]!, width: 1)),
+        border: Border(
+            bottom: BorderSide(color: Colors.grey[400]!, width: 1)),
       ),
       child: DropdownButton<String>(
         value: value,
-        hint: Text(
-          label,
-          style: const TextStyle(color: Color(0xFF391713), fontSize: 14),
-        ),
+        hint: Text(label,
+            style: const TextStyle(
+                color: Color(0xFF391713), fontSize: 14)),
         isExpanded: true,
         underline: const SizedBox(),
-        icon: const Icon(Icons.arrow_drop_down, color: Color(0xFF391713)),
-        items: const [], // később ide jönnek az opciók
+        icon: const Icon(Icons.arrow_drop_down,
+            color: Color(0xFF391713)),
+        items: [
+          // "Összes" opció a szűrő törlésére
+          DropdownMenuItem<String>(
+            value: null,
+            child: Text( label,
+                style: const TextStyle(
+                    color: Color(0xFF848383), fontSize: 14)),
+          ),
+          ...items.map((item) => DropdownMenuItem<String>(
+                value: item,
+                child: Text(item,
+                    style: const TextStyle(
+                        color: Color(0xFF391713), fontSize: 14)),
+              )),
+        ],
         onChanged: onChanged,
       ),
     );
   }
 }
+

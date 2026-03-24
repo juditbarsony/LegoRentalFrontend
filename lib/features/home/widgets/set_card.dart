@@ -71,17 +71,17 @@ Widget build(BuildContext context) {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  if (set.setNum != null) ...[
-                    const SizedBox(height: 1),  // ← kis rés
-                    Text(
-                      '#${set.setNum}',
-                      style: const TextStyle(
-                        color: Color(0xFF848383),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
+                  ...[
+                  const SizedBox(height: 1),  // ← kis rés
+                  Text(
+                    '#${set.setNum}',
+                    style: const TextStyle(
+                      color: Color(0xFF848383),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
                     ),
-                  ],
+                  ),
+                ],
                 ],
               ),
             ),
@@ -100,17 +100,17 @@ Widget build(BuildContext context) {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const Icon(Icons.extension, size: 36, color: Color(0xFF391713)),
-            if (set.setNum != null) ...[
-              const SizedBox(height: 4),
-              Text(
-                set.setNum!,
-                style: const TextStyle(
-                  color: Color(0xFF391713),
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                ),
+            ...[
+            const SizedBox(height: 4),
+            Text(
+              set.setNum!,
+              style: const TextStyle(
+                color: Color(0xFF391713),
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
               ),
-            ],
+            ),
+          ],
           ],
         ),
       ),

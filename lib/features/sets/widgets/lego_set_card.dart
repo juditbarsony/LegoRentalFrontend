@@ -73,24 +73,22 @@ class LegoSetCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  if (set.location != null)
-                    Text(
-                      set.location!,
-                      style: const TextStyle(
-                        color: Color(0xFF252525),
-                        fontSize: 14,
-                      ),
+                  Text(
+                    set.location!,
+                    style: const TextStyle(
+                      color: Color(0xFF252525),
+                      fontSize: 14,
                     ),
+                  ),
                   const SizedBox(height: 4),
-                  if (set.setNum != null)
-                    Text(
-                      'Set #: ${set.setNum}',
-                      style: const TextStyle(
-                        color: Color(0xFF391713),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                      ),
+                  Text(
+                    'Set #: ${set.setNum}',
+                    style: const TextStyle(
+                      color: Color(0xFF391713),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
                     ),
+                  ),
                   const SizedBox(height: 8),
                   Row(
                     children: const [
