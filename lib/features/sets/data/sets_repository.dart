@@ -4,7 +4,6 @@ import 'package:lego_rental_frontend/core/models/availability_model.dart';
 import 'package:lego_rental_frontend/core/models/lego_set_model.dart';
 import 'package:lego_rental_frontend/core/services/api_service.dart';
 
-
 class SetsRepository {
   final http.Client _client;
 
@@ -32,64 +31,125 @@ class SetsRepository {
   }
 
   Future<List<LegoSetModel>> loadSets({
-  String? keyword,
-  int? themeId,
-  String? state,
-  String? location,
-  double? maxPrice,
-  required String token,
-}) async {
-  final params = {
-    'public': 'true',
-    if (keyword != null && keyword.isNotEmpty) 'keyword': keyword,
-    if (themeId != null) 'theme_id': themeId.toString(),
-    'state': ?state,
-    'location': ?location,
-  };
+    String? keyword,
+    int? themeId,
+    String? state,
+    String? location,
+    double? maxPrice,
+    required String token,
+  }) async {
+    final params = {
+      'public': 'true',
+      if (keyword != null && keyword.isNotEmpty) 'keyword': keyword,
+      if (themeId != null) 'theme_id': themeId.toString(),
+      if (state != null) 'state': state,
+      if (location != null) 'location': location,
+    };
 
-  final uri = Uri.parse(
-    '${ApiService.baseUrl}/sets/',
-  ).replace(queryParameters: params);
+    final uri = Uri.parse(
+      '${ApiService.baseUrl}/sets/',
+    ).replace(queryParameters: params);
 
-  final response =
-      await _client.get(uri, headers: await _authHeaders(token));
+    final response = await _client.get(uri, headers: await _authHeaders(token));
 
-  if (response.statusCode == 200) {
-    final jsonList = jsonDecode(response.body) as List<dynamic>;
-    final sets = jsonList
-        .map((e) => LegoSetModel.fromJson(e as Map<String, dynamic>))
-        .toList();
-
-    // maxPrice szűrés kliens oldalon (backend nem támogatja még)
-    if (maxPrice != null) {
-      return sets
-          .where((s) => s.rentalPrice <= maxPrice)
+    if (response.statusCode == 200) {
+      final jsonList = jsonDecode(response.body) as List<dynamic>;
+      final sets = jsonList
+          .map((e) => LegoSetModel.fromJson(e as Map<String, dynamic>))
           .toList();
-    }
-    return sets;
-  } else {
-    throw Exception(
-        'Nem sikerült lekérni a készletlistát: ${response.statusCode}');
-  }
-}
 
+      if (maxPrice != null) {
+        return sets.where((s) => s.rentalPrice <= maxPrice).toList();
+      }
+      return sets;
+    } else {
+      throw Exception(
+        'Nem sikerült lekérni a készletlistát: ${response.statusCode}',
+      );
+    }
+  }
 
   Future<List<AvailabilityModel>> getAvailabilities(
-    int setId, String token) async {
-  final uri = Uri.parse('${ApiService.baseUrl}/sets/$setId/availabilities');
-  final response =
-      await _client.get(uri, headers: await _authHeaders(token));
+    int setId,
+    String token,
+  ) async {
+    final uri = Uri.parse('${ApiService.baseUrl}/sets/$setId/availabilities');
+    final response = await _client.get(uri, headers: await _authHeaders(token));
 
-  if (response.statusCode == 200) {
-    final jsonList = jsonDecode(response.body) as List<dynamic>;
-    return jsonList
-        .map((e) => AvailabilityModel.fromJson(e as Map<String, dynamic>))
-        .toList();
-  } else {
-    throw Exception(
-        'Nem sikerült lekérni az availability-ket: ${response.statusCode}');
+    if (response.statusCode == 200) {
+      final jsonList = jsonDecode(response.body) as List<dynamic>;
+      return jsonList
+          .map((e) => AvailabilityModel.fromJson(e as Map<String, dynamic>))
+          .toList();
+    } else {
+      throw Exception(
+        'Nem sikerült lekérni az availability-ket: ${response.statusCode}',
+      );
+    }
+  }
+
+  Future<LegoSetModel> createSet({
+    String? setNum,
+    String? title,
+    required String location,
+    required double rentalPrice,
+    required double deposit,
+    required bool scanRequired,
+    required bool isPublic,
+    String? state,
+    String? notes,
+    List<String>? missingItems,
+    required String token,
+  }) async {
+    final uri = Uri.parse('${ApiService.baseUrl}/sets/');
+    final body = jsonEncode({
+      if (setNum != null && setNum.isNotEmpty) 'set_num': setNum,
+      if (title != null && title.isNotEmpty) 'title': title,
+      'location': location,
+      'rental_price': rentalPrice,
+      'deposit': deposit,
+      'scan_required': scanRequired,
+      'public': isPublic,
+      if (state != null) 'state': state,
+      if (notes != null && notes.isNotEmpty) 'notes': notes,
+      if (missingItems != null && missingItems.isNotEmpty)
+        'missing_items': missingItems,
+    });
+
+    final response = await _client.post(
+      uri,
+      headers: await _authHeaders(token),
+      body: body,
+    );
+
+    if (response.statusCode == 201) {
+      return LegoSetModel.fromJson(
+        jsonDecode(response.body) as Map<String, dynamic>,
+      );
+    } else {
+      final detail = jsonDecode(response.body)['detail'] ?? 'Unknown error';
+      throw Exception(detail);
+    }
+  }
+
+  Future<void> addAvailability({
+    required int setId,
+    required String startDate,
+    required String endDate,
+    required String token,
+  }) async {
+    final uri = Uri.parse('${ApiService.baseUrl}/sets/$setId/availabilities');
+    final body = jsonEncode({'start_date': startDate, 'end_date': endDate});
+
+    final response = await _client.post(
+      uri,
+      headers: await _authHeaders(token),
+      body: body,
+    );
+
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      final detail = jsonDecode(response.body)['detail'] ?? 'Unknown error';
+      throw Exception('Availability error: $detail');
+    }
   }
 }
-}
-
-

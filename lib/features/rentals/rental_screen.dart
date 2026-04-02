@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lego_rental_frontend/core/models/lego_set_model.dart';
 import 'package:lego_rental_frontend/core/widgets/app_background.dart';
-import 'package:lego_rental_frontend/features/rental/rental_providers.dart';
+import 'package:lego_rental_frontend/features/rentals/rental_providers.dart';
 
 class RentalScreen extends ConsumerWidget {
   final LegoSetModel set;

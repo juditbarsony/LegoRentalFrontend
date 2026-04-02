@@ -2,7 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:lego_rental_frontend/core/models/rental_model.dart';
 import 'package:lego_rental_frontend/features/auth/auth_providers.dart';
-import 'package:lego_rental_frontend/features/rental/data/rental_repository.dart';
+import 'package:lego_rental_frontend/features/rentals/data/rental_repository.dart';
+
 
 final rentalRepositoryProvider = Provider<RentalRepository>((ref) {
   return RentalRepository();
@@ -81,4 +82,43 @@ final createRentalProvider =
     StateNotifierProvider<CreateRentalNotifier, CreateRentalState>((ref) {
   final repo = ref.watch(rentalRepositoryProvider);
   return CreateRentalNotifier(repo, ref);
+});
+
+// ─── My Rentals State ─────────────────────────────────────────────────────────
+
+class MyRentalsState {
+  final bool isLoading;
+  final List<RentalModel> rentals;
+  final String? errorMessage;
+
+  MyRentalsState({
+    this.isLoading = false,
+    this.rentals = const [],
+    this.errorMessage,
+  });
+}
+
+class MyRentalsNotifier extends StateNotifier<MyRentalsState> {
+  final RentalRepository _repo;
+  final Ref _ref;
+
+  MyRentalsNotifier(this._repo, this._ref) : super(MyRentalsState());
+
+  Future<void> load() async {
+    state = MyRentalsState(isLoading: true);
+    try {
+      final token = _ref.read(authProvider).accessToken;
+      if (token == null) throw Exception('Nincs token.');
+      final rentals = await _repo.getMyRentals(token);
+      state = MyRentalsState(rentals: rentals);
+    } catch (e) {
+      state = MyRentalsState(errorMessage: e.toString());
+    }
+  }
+}
+
+final myRentalsProvider =
+    StateNotifierProvider<MyRentalsNotifier, MyRentalsState>((ref) {
+  final repo = ref.watch(rentalRepositoryProvider);
+  return MyRentalsNotifier(repo, ref);
 });

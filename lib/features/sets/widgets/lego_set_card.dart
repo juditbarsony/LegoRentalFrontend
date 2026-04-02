@@ -4,16 +4,22 @@ import 'package:lego_rental_frontend/core/services/api_service.dart';
 
 class LegoSetCard extends StatelessWidget {
   final LegoSetModel set;
-  const LegoSetCard({super.key, required this.set, this.onTap});
-
   final VoidCallback? onTap;
+
+  const LegoSetCard({
+    super.key,
+    required this.set,
+    this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-
-    final imageUrl = set.imgUrl != null
+    final imageUrl = set.imgUrl != null && set.imgUrl!.isNotEmpty
         ? '${ApiService.baseUrl}/proxy/image?url=${Uri.encodeComponent(set.imgUrl!)}'
         : null;
+
+    debugPrint('CARD IMG URL: ${set.imgUrl}');
+    debugPrint('FULL URL: $imageUrl');
 
     return GestureDetector(
       onTap: onTap,
@@ -26,40 +32,38 @@ class LegoSetCard extends StatelessWidget {
         ),
         child: Row(
           children: [
-            // Bal oldali kép placeholder
+            // ── Kép ──────────────────────────────────────────────
             ClipRRect(
               borderRadius: BorderRadius.circular(12),
               child: SizedBox(
                 width: 100,
                 height: 100,
-                child: Builder(
-                  builder: (context) {
-                    final imageUrl =
-                        set.imgUrl != null && set.imgUrl!.isNotEmpty
-                        ? '${ApiService.baseUrl}/proxy/image?url=${Uri.encodeComponent(set.imgUrl!)}'
-                        : null;
-                    return (imageUrl != null)
-                        ? Image.network(
-                            imageUrl,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => const Icon(
-                              Icons.extension,
-                              size: 36,
-                              color: Color(0xFF391713),
-                            ),
-                          )
-                        : const Icon(
-                            Icons.extension,
-                            size: 36,
-                            color: Color(0xFF391713),
+                child: imageUrl != null
+                    ? Image.network(
+                        imageUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => const Icon(
+                          Icons.extension,
+                          size: 36,
+                          color: Color(0xFF391713),
+                        ),
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return const Center(
+                            child: CircularProgressIndicator(strokeWidth: 2),
                           );
-                  },
-                ),
+                        },
+                      )
+                    : const Icon(
+                        Icons.extension,
+                        size: 36,
+                        color: Color(0xFF391713),
+                      ),
               ),
             ),
             const SizedBox(width: 12),
 
-            // Jobb oldali szövegek
+            // ── Szövegek ──────────────────────────────────────────
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -67,39 +71,29 @@ class LegoSetCard extends StatelessWidget {
                   Text(
                     set.title,
                     style: const TextStyle(
-                      color: Color(0xFF391713),
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                    ),
+                        color: Color(0xFF391713),
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    set.location!,
+                    set.location,
                     style: const TextStyle(
-                      color: Color(0xFF252525),
-                      fontSize: 14,
-                    ),
+                        color: Color(0xFF252525), fontSize: 14),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Set #: ${set.setNum}',
+                    'Set: ${set.setNum}',
                     style: const TextStyle(
-                      color: Color(0xFF391713),
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                    ),
+                        color: Color(0xFF391713),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500),
                   ),
                   const SizedBox(height: 8),
-                  Row(
-                    children: const [
-                      Text(
-                        'Rating: 4.8',
-                        style: TextStyle(
-                          color: Color(0xFF848383),
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
+                  const Text(
+                    'Rating: 4.8',
+                    style: TextStyle(
+                        color: Color(0xFF848383), fontSize: 12),
                   ),
                 ],
               ),

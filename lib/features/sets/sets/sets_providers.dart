@@ -39,33 +39,33 @@ class SetsState {
 // ─── Notifier ─────────────────────────────────────────────────────────────────
 
 class SetsNotifier extends StateNotifier<SetsState> {
-  final SetsRepository repo;
-  final Ref ref;
+  final SetsRepository _repo;
+  final Ref _ref;
 
-  SetsNotifier(this.repo, this.ref) : super(const SetsState());
+  SetsNotifier(this._repo, this._ref) : super(const SetsState());
 
   Future<void> loadSets({
     String? keyword,
     int? themeId,
-    String? state,
+    String? setStatus,   // ← 'state' helyett, névütközés elkerülése
     String? location,
     double? maxPrice,
   }) async {
-    this.state = this.state.copyWith(isLoading: true, error: null);
+    state = state.copyWith(isLoading: true, error: null);
     try {
-      final token = ref.read(authProvider).accessToken;
+      final token = _ref.read(authProvider).accessToken;
       if (token == null) throw Exception('Nincs access token');
-      final sets = await repo.loadSets(
+      final sets = await _repo.loadSets(
         keyword: keyword,
         themeId: themeId,
-        state: state,
+        state: setStatus,
         location: location,
         maxPrice: maxPrice,
         token: token,
       );
-      this.state = this.state.copyWith(isLoading: false, items: sets);
+      state = state.copyWith(isLoading: false, items: sets);
     } catch (e) {
-      this.state = this.state.copyWith(isLoading: false, error: e.toString());
+      state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
 }

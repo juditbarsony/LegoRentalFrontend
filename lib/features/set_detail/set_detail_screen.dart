@@ -5,7 +5,7 @@ import 'package:lego_rental_frontend/core/services/api_service.dart';
 import 'package:lego_rental_frontend/core/widgets/app_background.dart';
 import 'package:lego_rental_frontend/features/home/home_screen.dart';
 import 'package:lego_rental_frontend/features/main/main_screen.dart';
-import 'package:lego_rental_frontend/features/rental/rental_screen.dart';
+import 'package:lego_rental_frontend/features/rentals/rental_screen.dart';
 import 'package:lego_rental_frontend/features/set_detail/set_detail_providers.dart';
 import 'package:lego_rental_frontend/core/models/lego_set_model.dart';
 

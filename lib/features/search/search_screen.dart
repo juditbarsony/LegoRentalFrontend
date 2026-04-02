@@ -105,7 +105,14 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               FilterDropdown(
                 label: 'Category',
                 value: selectedCategory,
-                items: const ['City', 'Technic', 'Star Wars', 'Basic', 'Creator','Other'], 
+                items: const [
+                  'City',
+                  'Technic',
+                  'Star Wars',
+                  'Basic',
+                  'Creator',
+                  'Other',
+                ],
                 onChanged: (value) {
                   setState(() {
                     selectedCategory = value;
@@ -197,7 +204,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                         .read(setsProvider.notifier)
                         .loadSets(
                           keyword: keyword.isEmpty ? null : keyword,
-                          state: selectedStatus,
+                          setStatus: selectedStatus,
                           location: selectedLocation,
                           maxPrice: _priceRange.end >= 5000
                               ? null
@@ -318,7 +325,8 @@ class FilterDropdown extends StatelessWidget {
   final List<String> items;
   final ValueChanged<String?> onChanged;
 
-  const FilterDropdown({super.key, 
+  const FilterDropdown({
+    super.key,
     required this.label,
     required this.value,
     required this.items,
@@ -331,36 +339,38 @@ class FilterDropdown extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       decoration: BoxDecoration(
         color: Colors.white,
-        border: Border(
-            bottom: BorderSide(color: Colors.grey[400]!, width: 1)),
+        border: Border(bottom: BorderSide(color: Colors.grey[400]!, width: 1)),
       ),
       child: DropdownButton<String>(
         value: value,
-        hint: Text(label,
-            style: const TextStyle(
-                color: Color(0xFF391713), fontSize: 14)),
+        hint: Text(
+          label,
+          style: const TextStyle(color: Color(0xFF391713), fontSize: 14),
+        ),
         isExpanded: true,
         underline: const SizedBox(),
-        icon: const Icon(Icons.arrow_drop_down,
-            color: Color(0xFF391713)),
+        icon: const Icon(Icons.arrow_drop_down, color: Color(0xFF391713)),
         items: [
           // "Összes" opció a szűrő törlésére
           DropdownMenuItem<String>(
             value: null,
-            child: Text( label,
-                style: const TextStyle(
-                    color: Color(0xFF848383), fontSize: 14)),
+            child: Text(
+              label,
+              style: const TextStyle(color: Color(0xFF848383), fontSize: 14),
+            ),
           ),
-          ...items.map((item) => DropdownMenuItem<String>(
-                value: item,
-                child: Text(item,
-                    style: const TextStyle(
-                        color: Color(0xFF391713), fontSize: 14)),
-              )),
+          ...items.map(
+            (item) => DropdownMenuItem<String>(
+              value: item,
+              child: Text(
+                item,
+                style: const TextStyle(color: Color(0xFF391713), fontSize: 14),
+              ),
+            ),
+          ),
         ],
         onChanged: onChanged,
       ),
     );
   }
 }
-
