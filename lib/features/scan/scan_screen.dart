@@ -24,25 +24,49 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
     Future.microtask(() => ref.read(myRentalsProvider.notifier).load());
   }
 
-  Future<void> _pickAndScan() async {
-    final scanState = ref.read(scanProvider);
-    if (scanState.session == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('First start a scan session.')),
-      );
-      return;
-    }
-    final XFile? image = await _picker.pickImage(
-      source: ImageSource.gallery,
-      imageQuality: 85,
+Future<void> _pickAndScan() async {
+  final scanState = ref.read(scanProvider);
+  if (scanState.session == null) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Először indíts scan session-t.')),
     );
-    if (image == null) return;
-    final bytes = await image.readAsBytes();
-    await ref.read(scanProvider.notifier).identifyAndMark(
-          imageBytes: bytes,
-          fileName: image.name,
-        );
+    return;
   }
+
+  // Kamera / Galéria választó
+  final source = await showModalBottomSheet<ImageSource>(
+    context: context,
+    builder: (_) => SafeArea(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ListTile(
+            leading: const Icon(Icons.camera_alt),
+            title: const Text('Kamera'),
+            onTap: () => Navigator.pop(context, ImageSource.camera),
+          ),
+          ListTile(
+            leading: const Icon(Icons.photo_library),
+            title: const Text('Galéria'),
+            onTap: () => Navigator.pop(context, ImageSource.gallery),
+          ),
+        ],
+      ),
+    ),
+  );
+  if (source == null) return;
+
+  final XFile? image = await _picker.pickImage(
+    source: source,
+    imageQuality: 85,
+  );
+  if (image == null) return;
+  final bytes = await image.readAsBytes();
+  await ref.read(scanProvider.notifier).identifyAndMark(
+    imageBytes: bytes,
+    fileName: image.name,
+  );
+}
 
   @override
   Widget build(BuildContext context) {
@@ -351,7 +375,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
                         final label = entry.key;
                         final items = entry.value;
                         final identifiedCount =
-                            items.where((i) => i.identified).length;
+                            items.where((i) => i.isFound).length;
                         final total = items.length;
                         final allDone = identifiedCount == total;
                         final firstName = items.first.name;
@@ -434,74 +458,6 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
                   ),
                 ],
 
-                /* // Elemek csoportosítva
-                  const Text('Elements',
-                      style: TextStyle(
-                          color: Color(0xFF391713),
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600)),
-                  const SizedBox(height: 8),
-
-                  ...session.itemsByPartNum.entries.map((entry) {
-                    final label = entry.key;
-                    final items = entry.value;
-                    final identifiedCount =
-                        items.where((i) => i.identified).length;
-                    final total = items.length;
-                    final allDone = identifiedCount == total;
-
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 10),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: allDone
-                              ? Colors.green
-                              : identifiedCount > 0
-                                  ? Colors.orange
-                                  : Colors.grey[300]!,
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            allDone
-                                ? Icons.check_circle
-                                : identifiedCount > 0
-                                    ? Icons.radio_button_checked
-                                    : Icons.radio_button_unchecked,
-                            color: allDone
-                                ? Colors.green
-                                : identifiedCount > 0
-                                    ? Colors.orange
-                                    : Colors.grey,
-                            size: 20,
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              label,
-                              style: const TextStyle(
-                                  color: Color(0xFF252525), fontSize: 13),
-                            ),
-                          ),
-                          Text(
-                            '$identifiedCount / $total',
-                            style: TextStyle(
-                              color:
-                                  allDone ? Colors.green : Colors.orange[800],
-                              fontWeight: FontWeight.w600,
-                              fontSize: 13,
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }),
-                  const SizedBox(height: 16), */
 
                 if (scanState.isLoading)
                   const Padding(

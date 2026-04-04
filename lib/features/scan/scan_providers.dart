@@ -67,55 +67,49 @@ class ScanNotifier extends StateNotifier<ScanState> {
   }
 
   Future<void> identifyAndMark({
-    required Uint8List imageBytes,
-    required String fileName,
-  }) async {
-    if (state.session == null) return;
-    state = state.copyWith(isLoading: true, errorMessage: null);
-    try {
-      final token = _ref.read(authProvider).accessToken;
-      if (token == null) throw Exception('Nincs token.');
+  required Uint8List imageBytes,
+  required String fileName,
+}) async {
+  if (state.session == null) return;
+  state = state.copyWith(isLoading: true, errorMessage: null);
+  try {
+    final token = _ref.read(authProvider).accessToken;
+    if (token == null) throw Exception('Nincs token.');
 
-      // 1. Azonosítás
-      final result = await _repo.identifyPart(
-        imageBytes: imageBytes,
-        fileName: fileName,
+    // 1. Azonosítás
+    final result = await _repo.identifyPart(
+      imageBytes: imageBytes,
+      fileName: fileName,
+      token: token,
+      sessionId: state.session!.id,
+    );
+
+    // 2. Mark batch — az összes detektált elemet megjelöli
+    if (result.elements.isNotEmpty) {
+      final updatedSession = await _repo.markBatch(
+        sessionId: state.session!.id,
+        elements: result.elements,
         token: token,
       );
-
-      // 2. Elem megjelölése ha benne van a session-ben
-      final sessionItems = state.session!.items;
-      final match = sessionItems
-          .where((i) => i.partNum == result.partNum && !i.identified)
-          .isNotEmpty;
-
-      ScanSessionModel updatedSession = state.session!;
-      if (match) {
-        updatedSession = await _repo.markItemIdentified(
-          sessionId: state.session!.id,
-          partNum: result.partNum,
-          confidence: result.confidence,
-          token: token,
-        );
-      }
-
       state = state.copyWith(
         isLoading: false,
-        lastResult: result,
+        lastResult: result.elements.first,
         session: updatedSession,
       );
-    } catch (e) {
-      state = state.copyWith(isLoading: false, errorMessage: e.toString());
+    } else {
+      state = state.copyWith(isLoading: false);
     }
+  } catch (e) {
+    state = state.copyWith(isLoading: false, errorMessage: e.toString());
   }
+}
 
   void reset() => state = ScanState();
 }
 
 // ─── Provider ─────────────────────────────────────────────────────────────────
 
-final scanProvider =
-    StateNotifierProvider<ScanNotifier, ScanState>((ref) {
-  final repo = ref.watch(scanRepositoryProvider);
-  return ScanNotifier(repo, ref);
+final scanProvider = StateNotifierProvider<ScanNotifier, ScanState>((ref) {
+  final _repo = ref.watch(scanRepositoryProvider);
+  return ScanNotifier(_repo, ref);
 });

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:http/http.dart' as http;
+import 'package:http/http.dart' as client;
 import 'package:lego_rental_frontend/core/models/scan_models.dart';
 import 'package:lego_rental_frontend/core/services/api_service.dart';
 
@@ -13,30 +14,31 @@ class ScanRepository {
         'Authorization': 'Bearer $token',
       };
 
-  Future<ScanIdentifyResult> identifyPart({
-    required Uint8List imageBytes,
-    required String fileName,
-    required String token,
-  }) async {
-    final uri = Uri.parse('${ApiService.baseUrl}/scan/identify');
-    final request = http.MultipartRequest('POST', uri)
-      ..headers.addAll(_authHeaders(token))
-      ..files.add(http.MultipartFile.fromBytes(
-        'file',
-        imageBytes,
-        filename: fileName,
-      ));
 
-    final streamedResponse = await request.send();
-    final response = await http.Response.fromStream(streamedResponse);
 
-    if (response.statusCode == 200) {
-      return ScanIdentifyResult.fromJson(
-          jsonDecode(response.body) as Map<String, dynamic>);
-    } else {
-      throw Exception('Azonosítás sikertelen: ${response.statusCode}');
-    }
+  Future<ScanIdentifyResponse> identifyPart({
+  required Uint8List imageBytes,
+  required String fileName,
+  required String token,
+  required int sessionId,  // ← ÚJ paraméter
+}) async {
+  final uri = Uri.parse('${ApiService.baseUrl}scan/identify')
+      .replace(queryParameters: {'session_id': sessionId.toString()});  // ← ÚJ
+
+  final request = http.MultipartRequest('POST', uri)
+    ..headers.addAll(authHeaders(token))
+    ..files.add(http.MultipartFile.fromBytes('file', imageBytes, filename: fileName));
+
+  final streamedResponse = await request.send();
+  final response = await http.Response.fromStream(streamedResponse);
+
+  if (response.statusCode == 200) {
+    return ScanIdentifyResponse.fromJson(
+        jsonDecode(response.body) as Map<String, dynamic>);
+  } else {
+    throw Exception('Azonosítás sikertelen: ${response.statusCode}');
   }
+}
 
   Future<ScanSessionModel> createSession({
     required int rentalId,
@@ -104,4 +106,39 @@ class ScanRepository {
       throw Exception('Session lekérés sikertelen.');
     }
   }
+
+  Future<ScanSessionModel> markBatch({
+  required int sessionId,
+  required List<ScanIdentifyResult> elements,
+  required String token,
+}) async {
+  final uri = Uri.parse(
+      '${ApiService.baseUrl}/scan/session/$sessionId/mark-batch');
+
+  final response = await client.post(
+    uri,
+    headers: {
+      ..._authHeaders(token),
+      'Content-Type': 'application/json',
+    },
+    body: jsonEncode({
+      'elements': elements
+          .map((e) => {
+                'part_num': e.partNum,
+                'confidence': e.confidence,
+                'color_name': e.colorName,
+                'detection_confidence': e.detectionConfidence,
+                'bounding_box': e.boundingBox,
+              })
+          .toList(),
+    }),
+  );
+
+  if (response.statusCode == 200) {
+    return ScanSessionModel.fromJson(
+        jsonDecode(response.body) as Map<String, dynamic>);
+  } else {
+    throw Exception('Batch jelölés sikertelen: ${response.statusCode}');
+  }
+}
 }
