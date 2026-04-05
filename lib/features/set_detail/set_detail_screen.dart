@@ -107,7 +107,7 @@ class SetDetailContent extends StatefulWidget {
 }
 
 class _SetDetailContentState extends State<SetDetailContent> {
-  bool _scanBeforeReturning = false;
+  final bool _scanBeforeReturning = false;
   DateTime? _rentalStart;
   DateTime? _rentalEnd;
 
@@ -470,7 +470,7 @@ class DetailDropdown extends StatelessWidget {
 
 class AvailabilityCalendar extends StatefulWidget {
   final void Function(DateTime? start, DateTime? end)? onRangeSelected;
-  const AvailabilityCalendar({this.onRangeSelected});
+  const AvailabilityCalendar({super.key, this.onRangeSelected});
 
   @override
   State<AvailabilityCalendar> createState() => _AvailabilityCalendarState();

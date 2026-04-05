@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:lego_rental_frontend/core/services/api_service.dart';
 import 'package:lego_rental_frontend/core/widgets/app_background.dart';
 import 'package:lego_rental_frontend/features/home/home_screen.dart';
 import 'package:lego_rental_frontend/features/scan/scan_providers.dart';
 import 'package:lego_rental_frontend/features/rentals/rental_providers.dart';
 import 'package:lego_rental_frontend/core/models/rental_model.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class ScanScreen extends ConsumerStatefulWidget {
   const ScanScreen({super.key});
@@ -24,49 +26,62 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
     Future.microtask(() => ref.read(myRentalsProvider.notifier).load());
   }
 
-Future<void> _pickAndScan() async {
-  final scanState = ref.read(scanProvider);
-  if (scanState.session == null) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Először indíts scan session-t.')),
+  Future<void> _pickAndScan({required ImageSource source}) async {
+    final scanState = ref.read(scanProvider);
+    if (scanState.session == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('First start a scan session.')),
+      );
+      return;
+    }
+
+    final XFile? image = await _picker.pickImage(
+      source: source,
+      imageQuality: 85,
     );
-    return;
+    if (image == null) return;
+
+    final bytes = await image.readAsBytes();
+    await ref.read(scanProvider.notifier).identifyAndMark(
+          imageBytes: bytes,
+          fileName: image.name,
+        );
   }
 
-  // Kamera / Galéria választó
-  final source = await showModalBottomSheet<ImageSource>(
-    context: context,
-    builder: (_) => SafeArea(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          ListTile(
-            leading: const Icon(Icons.camera_alt),
-            title: const Text('Kamera'),
-            onTap: () => Navigator.pop(context, ImageSource.camera),
-          ),
-          ListTile(
-            leading: const Icon(Icons.photo_library),
-            title: const Text('Galéria'),
-            onTap: () => Navigator.pop(context, ImageSource.gallery),
-          ),
-        ],
+  void _showSourceDialog() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
-    ),
-  );
-  if (source == null) return;
-
-  final XFile? image = await _picker.pickImage(
-    source: source,
-    imageQuality: 85,
-  );
-  if (image == null) return;
-  final bytes = await image.readAsBytes();
-  await ref.read(scanProvider.notifier).identifyAndMark(
-    imageBytes: bytes,
-    fileName: image.name,
-  );
-}
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 12),
+            ListTile(
+              leading: const Icon(Icons.camera_alt, color: Color(0xFF391713)),
+              title: const Text('Camera'),
+              onTap: () {
+                Navigator.pop(context);
+                _pickAndScan(source: ImageSource.camera);
+              },
+            ),
+            ListTile(
+              leading:
+                  const Icon(Icons.photo_library, color: Color(0xFF391713)),
+              title: const Text('Gallery'),
+              onTap: () {
+                Navigator.pop(context);
+                _pickAndScan(source: ImageSource.gallery);
+              },
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -96,7 +111,51 @@ Future<void> _pickAndScan() async {
               children: [
                 const SizedBox(height: 16),
 
-                // ── Rental választó ──────────────────────────────────
+                // ── Instrukciók (csak session előtt) ─────────────────────
+                if (session == null) ...[
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey[300]!),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: const [
+                        Text(
+                          'Before scanning:',
+                          style: TextStyle(
+                            color: Color(0xFF391713),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        SizedBox(height: 10),
+                        _InstructionRow(
+                          icon: Icons.wb_sunny_outlined,
+                          text:
+                              'Photograph in bright light, preferably on a white or plain background.',
+                        ),
+                        SizedBox(height: 8),
+                        _InstructionRow(
+                          icon: Icons.layers_outlined,
+                          text: 'You can scan multiple elements at once.',
+                        ),
+                        SizedBox(height: 8),
+                        _InstructionRow(
+                          icon: Icons.space_bar,
+                          text:
+                              'Elements must not overlap or touch each other.',
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+
+                // ── Rental választó ───────────────────────────────────────
                 const Text('Select Rental',
                     style: TextStyle(
                         color: Color(0xFF391713),
@@ -135,14 +194,16 @@ Future<void> _pickAndScan() async {
                                     ),
                                   ))
                               .toList(),
-                          onChanged: (value) => setState(() {
-                            _selectedRental = value;
-                          }),
+                          onChanged: session != null
+                              ? null // session közben ne lehessen váltani
+                              : (value) => setState(() {
+                                    _selectedRental = value;
+                                  }),
                         ),
                 ),
                 const SizedBox(height: 16),
 
-                // ── Session indítás gomb ──────────────────────────────
+                // ── Session indítás gomb ──────────────────────────────────
                 if (session == null)
                   SizedBox(
                     width: double.infinity,
@@ -164,10 +225,10 @@ Future<void> _pickAndScan() async {
                           ? null
                           : () {
                               if (_selectedRental == null) {
-                                ScaffoldMessenger.of(context)
-                                    .showSnackBar(const SnackBar(
-                                  content: Text('Please select a rental.'),
-                                ));
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                        content:
+                                            Text('Please select a rental.')));
                                 return;
                               }
                               ref.read(scanProvider.notifier).createSession(
@@ -178,9 +239,9 @@ Future<void> _pickAndScan() async {
                     ),
                   ),
 
-                // ── Aktív session UI ──────────────────────────────────
+                // ── Aktív session UI ──────────────────────────────────────
                 if (session != null) ...[
-                  // Státusz
+                  // Státusz sáv
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(12),
@@ -207,7 +268,7 @@ Future<void> _pickAndScan() async {
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          '${session.status}  |  '
+                          '${session.status} | '
                           '${session.identifiedCount}/${session.totalCount} identified',
                           style: TextStyle(
                             color: session.status == 'COMPLETE'
@@ -232,33 +293,15 @@ Future<void> _pickAndScan() async {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '${session.identifiedCount} / ${session.totalCount}  |  '
+                    '${session.identifiedCount} / ${session.totalCount} | '
                     '${session.missingCount} missing',
                     style:
                         const TextStyle(color: Color(0xFF848383), fontSize: 12),
                   ),
                   const SizedBox(height: 16),
 
-                  // Utolsó azonosítás
-                  if (scanState.lastResult != null) ...[
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFFF3CD),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: const Color(0xFFFFE082)),
-                      ),
-                      child: Text(
-                        'Last identified: ${scanState.lastResult!.partNum} '
-                        '(${(scanState.lastResult!.confidence * 100).toStringAsFixed(0)}% confidence)',
-                        style: const TextStyle(
-                            color: Color(0xFF391713),
-                            fontWeight: FontWeight.w500),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                  ],
+                  // ── Utolsó azonosított elem a listában kiemelve ──────────
+                  // (a "last identified" banner helyett a listában látszik)
 
                   // Scan gomb
                   Center(
@@ -267,7 +310,7 @@ Future<void> _pickAndScan() async {
                       child: ElevatedButton.icon(
                         icon: const Icon(Icons.camera_alt,
                             color: Color(0xFF391713)),
-                        label: const Text('Scan Element',
+                        label: const Text('Scan Elements',
                             style: TextStyle(
                                 color: Color(0xFF391713),
                                 fontSize: 16,
@@ -278,13 +321,14 @@ Future<void> _pickAndScan() async {
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(13)),
                         ),
-                        onPressed: scanState.isLoading ? null : _pickAndScan,
+                        onPressed:
+                            scanState.isLoading ? null : _showSourceDialog,
                       ),
                     ),
                   ),
                   const SizedBox(height: 12),
 
-                  // Cancel / Ready gombok
+                  // Cancel / Save gombok
                   Row(
                     children: [
                       Expanded(
@@ -320,7 +364,7 @@ Future<void> _pickAndScan() async {
                               SnackBar(
                                 content: Text(missing == 0
                                     ? 'Scan complete – all elements found!'
-                                    : 'Scan complete – $missing elements missing.'),
+                                    : 'Scan saved – $missing elements still missing.'),
                                 backgroundColor:
                                     missing == 0 ? Colors.green : Colors.orange,
                               ),
@@ -328,7 +372,7 @@ Future<void> _pickAndScan() async {
                             ref.read(scanProvider.notifier).reset();
                             setState(() => _selectedRental = null);
                           },
-                          child: const Text('Ready',
+                          child: const Text('Save',
                               style: TextStyle(
                                   color: Color(0xFF391713),
                                   fontSize: 16,
@@ -354,14 +398,13 @@ Future<void> _pickAndScan() async {
                     const SizedBox(height: 12),
                   ],
 
-                  // ── Elemek listája scrollozható boxban ───────────────
+                  // ── Elemek listája ────────────────────────────────────────
                   const Text('Elements',
                       style: TextStyle(
                           color: Color(0xFF391713),
                           fontSize: 16,
                           fontWeight: FontWeight.w600)),
                   const SizedBox(height: 8),
-
                   Container(
                     height: 400,
                     decoration: BoxDecoration(
@@ -372,31 +415,67 @@ Future<void> _pickAndScan() async {
                     child: ListView(
                       padding: const EdgeInsets.all(8),
                       children: session.itemsByPartNum.entries.map((entry) {
-                        final label = entry.key;
                         final items = entry.value;
                         final identifiedCount =
-                            items.where((i) => i.isFound).length;
+                            items.where((i) => i.identified).length;
                         final total = items.length;
                         final allDone = identifiedCount == total;
                         final firstName = items.first.name;
+                        final partNum = items.first.partNum;
+                        final color = items.first.color;
+                        final imgUrl = items.first.imgUrl != null
+                            ? '${ApiService.baseUrl}/proxy/image?url=${Uri.encodeComponent(items.first.imgUrl!)}'
+                            : null;
+                        // Utolsó azonosított elem kiemelése
+                        final isLastIdentified =
+                            scanState.lastResult?.partNum == partNum;
 
                         return Container(
                           margin: const EdgeInsets.only(bottom: 8),
                           padding: const EdgeInsets.symmetric(
                               horizontal: 12, vertical: 10),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: isLastIdentified
+                                ? const Color(0xFFFFF3CD)
+                                : Colors.white,
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(
-                              color: allDone
-                                  ? Colors.green
-                                  : identifiedCount > 0
-                                      ? Colors.orange
-                                      : Colors.grey[300]!,
+                              color: isLastIdentified
+                                  ? const Color(0xFFFFE082)
+                                  : allDone
+                                      ? Colors.green
+                                      : identifiedCount > 0
+                                          ? Colors.orange
+                                          : Colors.grey[300]!,
+                              width: isLastIdentified ? 2 : 1,
                             ),
                           ),
                           child: Row(
                             children: [
+                              if (imgUrl != null)
+                                Padding(
+                                  padding: const EdgeInsets.only(right: 8),
+                                  child: Image.network(
+                                    imgUrl,
+                                    width: 48,
+                                    height: 48,
+                                    fit: BoxFit.contain,
+                                    loadingBuilder:
+                                        (context, child, loadingProgress) {
+                                      if (loadingProgress == null) return child;
+                                      return const SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                            strokeWidth: 2),
+                                      );
+                                    },
+                                    errorBuilder:
+                                        (context, error, stackTrace) =>
+                                            const Icon(Icons.broken_image,
+                                                size: 48, color: Colors.grey),
+                                  ),
+                                ),
                               Icon(
                                 allDone
                                     ? Icons.check_circle
@@ -416,7 +495,7 @@ Future<void> _pickAndScan() async {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      items.first.partNum,
+                                      partNum,
                                       style: const TextStyle(
                                           color: Color(0xFF391713),
                                           fontSize: 12,
@@ -431,12 +510,24 @@ Future<void> _pickAndScan() async {
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
                                       ),
-                                    Text(
-                                      items.first.color ?? '',
-                                      style: const TextStyle(
-                                          color: Color(0xFF848383),
-                                          fontSize: 11),
-                                    ),
+                                    if (color != null)
+                                      Text(
+                                        color,
+                                        style: const TextStyle(
+                                            color: Color(0xFF848383),
+                                            fontSize: 11),
+                                      ),
+                                    // Utolsó azonosítottnál confidence
+                                    if (isLastIdentified &&
+                                        scanState.lastResult != null)
+                                      Text(
+                                        'Confidence: ${(scanState.lastResult!.confidence * 100).toStringAsFixed(0)}%',
+                                        style: const TextStyle(
+                                          color: Color(0xFF391713),
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
                                   ],
                                 ),
                               ),
@@ -458,7 +549,6 @@ Future<void> _pickAndScan() async {
                   ),
                 ],
 
-
                 if (scanState.isLoading)
                   const Padding(
                     padding: EdgeInsets.all(16),
@@ -471,6 +561,34 @@ Future<void> _pickAndScan() async {
           ),
         ),
       ),
+    );
+  }
+}
+
+// ── Segédwidget az instrukció sorhoz ─────────────────────────────────────────
+class _InstructionRow extends StatelessWidget {
+  final IconData icon;
+  final String text;
+
+  const _InstructionRow({required this.icon, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 18, color: const Color(0xFF391713)),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            text,
+            style: const TextStyle(
+              color: Color(0xFF252525),
+              fontSize: 13,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

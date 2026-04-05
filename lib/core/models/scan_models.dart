@@ -4,9 +4,8 @@ class ScanItemModel {
   final String partNum;
   final String? name;
   final String? color;
-  final String status; // ← "ai_identified" | "manually_confirmed" | "missing"
-  final int? confirmedBy; // ← ÚJ
-  final DateTime? confirmedAt;
+  final String? imgUrl; 
+  final String status;
   final double? confidence;
 
   ScanItemModel({
@@ -14,12 +13,23 @@ class ScanItemModel {
     required this.sessionId,
     required this.partNum,
     this.name,
-    this.color, // ÚJ
+    this.color,
+    this.imgUrl,
     required this.status,
-    this.confirmedBy,
-    this.confirmedAt,
     this.confidence,
   });
+
+  // Bool getter, nem tárolt mező
+  bool get identified =>
+      status == 'ai_identified' || status == 'manually_confirmed';
+
+  bool get isFound => identified;
+
+  bool get isMissing => status == 'missing';
+
+  bool get isIdentified => status == 'ai_identified';
+
+  bool get isManuallyConfirmed => status == 'manually_confirmed';
 
   factory ScanItemModel.fromJson(Map<String, dynamic> json) {
     return ScanItemModel(
@@ -28,19 +38,11 @@ class ScanItemModel {
       partNum: json['part_num'] as String,
       name: json['name'] as String?,
       color: json['color'] as String?,
-      status: json['status'] as String,
-      confirmedBy: json['confirmed_by'] as int?,
-      confirmedAt: json['confirmed_at'] != null
-          ? DateTime.parse(json['confirmed_at'] as String)
-          : null,
+      imgUrl: json['img_url'] as String?,
+      status: json['status'] as String? ?? 'missing',
       confidence: (json['confidence'] as num?)?.toDouble(),
     );
   }
-  // Helper getterek
-  bool get isIdentified => status == 'ai_identified';
-  bool get isManuallyConfirmed => status == 'manually_confirmed';
-  bool get isMissing => status == 'missing';
-  bool get isFound => status != 'missing'; // ← AI vagy manuális, mindegy
 }
 
 class ScanSessionModel {
@@ -93,26 +95,23 @@ class ScanSessionModel {
 
 class ScanIdentifyResult {
   final String partNum;
-  final String? colorName;
   final double confidence;
   final double detectionConfidence;
-  final Map<String, dynamic> boundingBox;
+  final String? colorName;
 
   ScanIdentifyResult({
     required this.partNum,
-    this.colorName,
     required this.confidence,
     required this.detectionConfidence,
-    required this.boundingBox,
+    this.colorName,
   });
 
   factory ScanIdentifyResult.fromJson(Map<String, dynamic> json) {
     return ScanIdentifyResult(
       partNum: json['part_num'] as String,
-      colorName: json['color_name'] as String?,
       confidence: (json['confidence'] as num).toDouble(),
       detectionConfidence: (json['detection_confidence'] as num).toDouble(),
-      boundingBox: json['bounding_box'] as Map<String, dynamic>,
+      colorName: json['color_name'] as String?,
     );
   }
 }

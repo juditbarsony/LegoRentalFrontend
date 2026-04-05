@@ -10,7 +10,6 @@ final scanRepositoryProvider = Provider<ScanRepository>((ref) {
 });
 
 // ─── State ────────────────────────────────────────────────────────────────────
-
 class ScanState {
   final bool isLoading;
   final String? errorMessage;
@@ -40,7 +39,6 @@ class ScanState {
 }
 
 // ─── Notifier ─────────────────────────────────────────────────────────────────
-
 class ScanNotifier extends StateNotifier<ScanState> {
   final ScanRepository _repo;
   final Ref _ref;
@@ -67,49 +65,56 @@ class ScanNotifier extends StateNotifier<ScanState> {
   }
 
   Future<void> identifyAndMark({
-  required Uint8List imageBytes,
-  required String fileName,
-}) async {
-  if (state.session == null) return;
-  state = state.copyWith(isLoading: true, errorMessage: null);
-  try {
-    final token = _ref.read(authProvider).accessToken;
-    if (token == null) throw Exception('Nincs token.');
+    required Uint8List imageBytes,
+    required String fileName,
+  }) async {
+    if (state.session == null) return;
+    state = state.copyWith(isLoading: true, errorMessage: null);
+    try {
+      final token = _ref.read(authProvider).accessToken;
+      if (token == null) throw Exception('Nincs token.');
 
-    // 1. Azonosítás
-    final result = await _repo.identifyPart(
-      imageBytes: imageBytes,
-      fileName: fileName,
-      token: token,
-      sessionId: state.session!.id,
-    );
-
-    // 2. Mark batch — az összes detektált elemet megjelöli
-    if (result.elements.isNotEmpty) {
-      final updatedSession = await _repo.markBatch(
+      // 1. Azonosítás – visszaadja az összes felismert elemet
+      final results = await _repo.identifyParts(
         sessionId: state.session!.id,
-        elements: result.elements,
+        imageBytes: imageBytes,
+        fileName: fileName,
         token: token,
       );
+
+      if (results.isEmpty) {
+        state = state.copyWith(isLoading: false);
+        return;
+      }
+
+      // 2. Mark-batch – az összes találatot egyszerre küldi
+      final updatedSession = await _repo.markBatch(
+        sessionId: state.session!.id,
+        elements: results,
+        token: token,
+      );
+
+      // 3. Legjobb confidence-ű találat lesz a lastResult
+      final best = results.reduce(
+        (a, b) => a.confidence > b.confidence ? a : b,
+      );
+
       state = state.copyWith(
         isLoading: false,
-        lastResult: result.elements.first,
+        lastResult: best,
         session: updatedSession,
       );
-    } else {
-      state = state.copyWith(isLoading: false);
+    } catch (e) {
+      state = state.copyWith(isLoading: false, errorMessage: e.toString());
     }
-  } catch (e) {
-    state = state.copyWith(isLoading: false, errorMessage: e.toString());
   }
-}
 
   void reset() => state = ScanState();
 }
 
 // ─── Provider ─────────────────────────────────────────────────────────────────
-
-final scanProvider = StateNotifierProvider<ScanNotifier, ScanState>((ref) {
-  final _repo = ref.watch(scanRepositoryProvider);
-  return ScanNotifier(_repo, ref);
+final scanProvider =
+    StateNotifierProvider<ScanNotifier, ScanState>((ref) {
+  final repo = ref.watch(scanRepositoryProvider);
+  return ScanNotifier(repo, ref);
 });
