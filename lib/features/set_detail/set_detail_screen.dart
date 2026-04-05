@@ -48,18 +48,18 @@ class _SetDetailScreenState extends ConsumerState<SetDetailScreen> {
           child: state.isLoading
               ? const Center(child: CircularProgressIndicator())
               : state.errorMessage != null
-              ? Center(
-                  child: Text(
-                    state.errorMessage!,
-                    style: const TextStyle(color: Colors.red),
-                  ),
-                )
-              : state.set == null
-              ? const Center(child: Text('Nincs adat.'))
-              : SetDetailContent(
-                  set: state.set!,
-                  availabilities: state.availabilities,
-                ),
+                  ? Center(
+                      child: Text(
+                        state.errorMessage!,
+                        style: const TextStyle(color: Colors.red),
+                      ),
+                    )
+                  : state.set == null
+                      ? const Center(child: Text('Nincs adat.'))
+                      : SetDetailContent(
+                          set: state.set!,
+                          availabilities: state.availabilities,
+                        ),
         ),
       ),
       bottomNavigationBar: BottomNavigationBar(
@@ -122,139 +122,159 @@ class _SetDetailContentState extends State<SetDetailContent> {
         children: [
           const SizedBox(height: 16),
 
-          // ── Kép ──────────────────────────────────────────────────────────
-          ClipRRect(
-            borderRadius: BorderRadius.circular(16),
-            child: s.imgUrl != null
-                ? Image.network(
-                    '${ApiService.baseUrl}/proxy/image?url=${Uri.encodeComponent(s.imgUrl!)}',
-                    width: double.infinity,
-                    height: 200,
-                    fit: BoxFit.contain,
-                    errorBuilder: (_, __, ___) => _imagePlaceholder(),
-                  )
-                : _imagePlaceholder(),
-          ),
-          const SizedBox(height: 24),
-
-          // ── Cím ──────────────────────────────────────────────────────────
-          const Text(
-            'Title',
-            style: TextStyle(
-              color: Color(0xFF391713),
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
+// ── Preview kártya: kép + fő adatok ──────────────────────────────
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.grey[300]!),
+            ),
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    width: 110,
+                    height: 110,
+                    color: Colors.grey[200],
+                    child: s.imgUrl != null
+                        ? Image.network(
+                            '${ApiService.baseUrl}/proxy/image?url=${Uri.encodeComponent(s.imgUrl!)}',
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => _imagePlaceholder(),
+                          )
+                        : _imagePlaceholder(),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              s.title,
+                              style: const TextStyle(
+                                color: Color(0xFF391713),
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: s.visibility == 'friends_only'
+                                  ? const Color(0xFFFFF3CD)
+                                  : const Color(0xFFE8F5E9),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: s.visibility == 'friends_only'
+                                    ? const Color(0xFFFFE082)
+                                    : const Color(0xFFA5D6A7),
+                              ),
+                            ),
+                            child: Text(
+                              s.visibility == 'friends_only'
+                                  ? 'Friends only'
+                                  : (s.public ? 'Public' : 'Private'),
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                color: s.visibility == 'friends_only'
+                                    ? const Color(0xFF856404)
+                                    : const Color(0xFF2E7D32),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      
+                      if (s.setNum.isNotEmpty)
+                        Text(
+                          'Set: ${s.setNum}',
+                          style: const TextStyle(
+                            color: Color(0xFF848383),
+                            fontSize: 13,
+                          ),
+                        ),
+                      const SizedBox(height: 6),
+                      Text(
+                        s.location,
+                        style: const TextStyle(
+                          color: Color(0xFF252525),
+                          fontSize: 13,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        '${s.rentalPrice.toStringAsFixed(0)} Ft / day',
+                        style: const TextStyle(
+                          color: Color(0xFF252525),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 8),
-          Text(
-            s.title,
-            style: const TextStyle(color: Color(0xFF252525), fontSize: 16),
-          ),
-          const SizedBox(height: 8),
-
-          // ── Set szám ─────────────────────────────────────────────────────
-          if (s.setNum.isNotEmpty) ...[
-            Text(
-              'Set: ${s.setNum}',
-              style: const TextStyle(color: Color(0xFF848383), fontSize: 13),
-            ),
-            const SizedBox(height: 8),
-          ],
-
-          // ── Helyszín ─────────────────────────────────────────────────────
-          const Text(
-            'Location',
-            style: TextStyle(
-              color: Color(0xFF391713),
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            s.location,
-            style: const TextStyle(color: Color(0xFF252525), fontSize: 14),
+          const SizedBox(height: 16),
+// ── Részletek (info grid) ────────────────────────────────────────
+/*           GridView.count(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisCount: 2,
+            mainAxisSpacing: 0,
+            crossAxisSpacing: 2,
+            childAspectRatio: 4.3,
+            children: [
+              _infoTile('Deposit', '${s.deposit.toStringAsFixed(0)} Ft'),
+              if (s.numberOfItems != null)
+                _infoTile('Number of items', '${s.numberOfItems} db'),
+              if (s.state != null) _infoTile('State', s.state!),
+              _infoTile(
+                'Visibility',
+                s.visibility == 'friends_only' ? 'Friends only' : 'Public',
+              ),
+              if (s.ownerName != null) _infoTile('Owner', s.ownerName!),
+              if (s.averageRating != null)
+                _infoTile(
+                  'Rating',
+                  '${s.averageRating!.toStringAsFixed(1)} / 5'
+                      '${s.reviewCount != null ? ' (${s.reviewCount} reviews)' : ''}',
+                ),
+              _infoTile(
+                'Scanning before return',
+                s.scanBeforeReturn == true ? 'Yes' : 'No',
+              ),
+            ],
           ),
           const SizedBox(height: 16),
 
-          // ── Bérleti díj ──────────────────────────────────────────────────
-          const Text(
-            'Rental Price',
-            style: TextStyle(
-              color: Color(0xFF391713),
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '${s.rentalPrice.toStringAsFixed(0)} Ft / day',
-            style: const TextStyle(color: Color(0xFF252525), fontSize: 14),
-          ),
-          const SizedBox(height: 8),
-
-          // ── Kaució ───────────────────────────────────────────────────────
-          const Text(
-            'Deposit',
-            style: TextStyle(
-              color: Color(0xFF391713),
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '${s.deposit.toStringAsFixed(0)} Ft',
-            style: const TextStyle(color: Color(0xFF252525), fontSize: 14),
-          ),
-          const SizedBox(height: 16),
-
-          // ── Elemek száma ─────────────────────────────────────────────────
-          if (s.numberOfItems != null) ...[
-            const Text(
-              'Number of Items',
-              style: TextStyle(
-                color: Color(0xFF391713),
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              '${s.numberOfItems} db',
-              style: const TextStyle(color: Color(0xFF252525), fontSize: 14),
-            ),
-            const SizedBox(height: 16),
-          ],
-
-          // ── Állapot ──────────────────────────────────────────────────────
-          if (s.state != null) ...[
-            const Text(
-              'State',
-              style: TextStyle(
-                color: Color(0xFF391713),
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              s.state!,
-              style: const TextStyle(color: Color(0xFF252525), fontSize: 14),
-            ),
-            const SizedBox(height: 16),
-          ],
-
-          // ── Megjegyzés ───────────────────────────────────────────────────
           if (s.notes != null &&
               s.notes!.isNotEmpty &&
               s.notes != 'string') ...[
+            const SizedBox(height: 8),
             const Text(
               'Notes',
               style: TextStyle(
                 color: Color(0xFF391713),
-                fontSize: 18,
+                fontSize: 16,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -267,21 +287,128 @@ class _SetDetailContentState extends State<SetDetailContent> {
           ],
 
           // ── Scan checkbox ────────────────────────────────────────────────
-          Row(
-            children: const [
-              Icon(Icons.qr_code_scanner, size: 18, color: Color(0xFF848383)),
-              SizedBox(width: 8),
-              Text(
-                'Scanning needed before return',
-                style: TextStyle(color: Color(0xFF252525), fontSize: 14),
-              ),
-            ],
+/*           Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: Colors.grey[300]!),
+            ),
+            child: Row(
+              children: const [
+                Icon(Icons.qr_code_scanner, size: 18, color: Color(0xFF848383)),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Scanning required before return',
+                    style: TextStyle(
+                      color: Color(0xFF252525),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ), */
+          const SizedBox(height: 16), */
+
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey[300]!),
+            ),
+            child: GridView.count(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              crossAxisCount: 2,
+              mainAxisSpacing: 4,
+              crossAxisSpacing: 10,
+              childAspectRatio: 3.8,
+              children: [
+                _infoTile('Location', s.location),
+                _infoTile('Rental price',
+                    '${s.rentalPrice.toStringAsFixed(0)} Ft / day'),
+                _infoTile('Deposit', '${s.deposit.toStringAsFixed(0)} Ft'),
+                if (s.numberOfItems != null)
+                  _infoTile('Number of items', '${s.numberOfItems}'),
+                if (s.state != null && s.state!.isNotEmpty)
+                  _infoTile('State', s.state!),
+                _infoTile(
+                    'Scanning before return', s.scanRequired ? 'Yes' : 'No'),
+                _infoTile(
+                  'Visibility',
+                  s.visibility == 'friends_only'
+                      ? 'Friends only'
+                      : (s.public ? 'Public' : 'Private'),
+                ),
+                if (s.ownerName != null && s.ownerName!.isNotEmpty)
+                  _infoTile('Owner', s.ownerName!),
+                if (s.averageRating != null)
+                  _infoTile(
+                    'Rating',
+                    '${s.averageRating!.toStringAsFixed(1)} / 5'
+                        '${s.reviewCount != null ? ' (${s.reviewCount})' : ''}',
+                  ),
+              ],
+            ),
           ),
           const SizedBox(height: 16),
 
+          if (s.averageRating != null || s.reviewCount != null) ...[
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey[300]!),
+              ),
+              child: Row(
+                children: [
+                  Row(
+                    children: List.generate(5, (index) {
+                      final filled = index < (s.averageRating ?? 0).round();
+                      return Icon(
+                        filled ? Icons.star : Icons.star_border,
+                        size: 18,
+                        color: const Color(0xFFFFC107),
+                      );
+                    }),
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    s.averageRating != null
+                        ? '${s.averageRating!.toStringAsFixed(1)} / 5'
+                        : 'No rating yet',
+                    style: const TextStyle(
+                      color: Color(0xFF252525),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  if (s.reviewCount != null)
+                    Text(
+                      '(${s.reviewCount} reviews)',
+                      style: const TextStyle(
+                        color: Color(0xFF848383),
+                        fontSize: 13,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+
           //--Elérhetőség-----------------------------------------------------
           const Text(
-            'Elérhető időszakok',
+            'Available periods',
             style: TextStyle(
               color: Color(0xFF391713),
               fontSize: 16,
@@ -343,19 +470,6 @@ class _SetDetailContentState extends State<SetDetailContent> {
                 ),
           const SizedBox(height: 16),
 
-          // ── Naptár ───────────────────────────────────────────────────────
-          /*           const Text(
-            'Availability Calendar',
-            style: TextStyle(
-              color: Color(0xFF252525),
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 12),
-          const AvailabilityCalendar(),
-          const SizedBox(height: 24),
- */
           AvailabilityCalendar(
             onRangeSelected: (start, end) {
               setState(() {
@@ -408,6 +522,39 @@ class _SetDetailContentState extends State<SetDetailContent> {
             ),
           ),
           const SizedBox(height: 16),
+        ],
+      ),
+    );
+  }
+
+  Widget _infoTile(String label, String value) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 13,
+              color: Color(0xFF848383),
+              fontWeight: FontWeight.w500,
+              height: 1.15,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 14,
+              color: Color(0xFF252525),
+              fontWeight: FontWeight.w500,
+              height: 1.2,
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
         ],
       ),
     );
@@ -483,22 +630,22 @@ class _AvailabilityCalendarState extends State<AvailabilityCalendar> {
   DateTime? endDate;
 
   void _previousMonth() => setState(() {
-    if (currentMonth == 1) {
-      currentMonth = 12;
-      currentYear--;
-    } else {
-      currentMonth--;
-    }
-  });
+        if (currentMonth == 1) {
+          currentMonth = 12;
+          currentYear--;
+        } else {
+          currentMonth--;
+        }
+      });
 
   void _nextMonth() => setState(() {
-    if (currentMonth == 12) {
-      currentMonth = 1;
-      currentYear++;
-    } else {
-      currentMonth++;
-    }
-  });
+        if (currentMonth == 12) {
+          currentMonth = 1;
+          currentYear++;
+        } else {
+          currentMonth++;
+        }
+      });
 
   void _previousYear() => setState(() => currentYear--);
   void _nextYear() => setState(() => currentYear++);
@@ -587,7 +734,7 @@ class _AvailabilityCalendarState extends State<AvailabilityCalendar> {
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 2),
 
           // ── Hónap választó ───────────────────────────────────────────
           Row(
@@ -614,16 +761,16 @@ class _AvailabilityCalendarState extends State<AvailabilityCalendar> {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 2),
 
           // ── Hétköznapok fejléc ───────────────────────────────────────
           GridView.count(
             shrinkWrap: true,
-            crossAxisCount: 7,
-            mainAxisSpacing: 8,
-            crossAxisSpacing: 8,
-            childAspectRatio: 1,
             physics: const NeverScrollableScrollPhysics(),
+            crossAxisCount: 7,
+            mainAxisSpacing: 3,
+            crossAxisSpacing: 3,
+            childAspectRatio: 1.2,
             children: const [
               Center(
                 child: Text('H', style: TextStyle(fontWeight: FontWeight.w600)),
@@ -657,7 +804,7 @@ class _AvailabilityCalendarState extends State<AvailabilityCalendar> {
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 2),
 
           // ── Napok rács ───────────────────────────────────────────────
           GridView.builder(
@@ -665,9 +812,9 @@ class _AvailabilityCalendarState extends State<AvailabilityCalendar> {
             physics: const NeverScrollableScrollPhysics(),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 7,
-              mainAxisSpacing: 8,
-              crossAxisSpacing: 8,
-              childAspectRatio: 1,
+              mainAxisSpacing: 3,
+              crossAxisSpacing: 3,
+              childAspectRatio: 1.08,
             ),
             itemCount: daysInMonth + firstWeekday - 1,
             itemBuilder: (context, index) {
@@ -676,27 +823,24 @@ class _AvailabilityCalendarState extends State<AvailabilityCalendar> {
 
               final day = index - firstWeekday + 2;
               final isInRange = _isDayInRange(day);
-              final isStart =
-                  startDate != null &&
+              final isStart = startDate != null &&
                   DateTime(currentYear, currentMonth, day) == startDate;
-              final isEnd =
-                  endDate != null &&
+              final isEnd = endDate != null &&
                   DateTime(currentYear, currentMonth, day) == endDate;
 
               return GestureDetector(
                 onTap: () => _selectDay(day),
                 child: Container(
                   decoration: BoxDecoration(
-                    color: isInRange
-                        ? const Color(0xFF848383)
-                        : Colors.grey[200],
-                    borderRadius: BorderRadius.circular(8),
+                    color:
+                        isInRange ? const Color(0xFF848383) : Colors.grey[200],
+                    borderRadius: BorderRadius.circular(6),
                     border: Border.all(
                       color: isStart || isEnd
                           ? const Color(0xFF391713)
                           : isInRange
-                          ? const Color(0xFF848383)
-                          : Colors.grey[300]!,
+                              ? const Color(0xFF848383)
+                              : Colors.grey[300]!,
                       width: isStart || isEnd ? 2 : 1,
                     ),
                   ),
@@ -720,8 +864,8 @@ class _AvailabilityCalendarState extends State<AvailabilityCalendar> {
             Text(
               endDate != null
                   ? '${startDate!.year}.${startDate!.month.toString().padLeft(2, '0')}.${startDate!.day.toString().padLeft(2, '0')}'
-                        ' – '
-                        '${endDate!.year}.${endDate!.month.toString().padLeft(2, '0')}.${endDate!.day.toString().padLeft(2, '0')}'
+                      ' – '
+                      '${endDate!.year}.${endDate!.month.toString().padLeft(2, '0')}.${endDate!.day.toString().padLeft(2, '0')}'
                   : 'Kezdő dátum: ${startDate!.year}.${startDate!.month.toString().padLeft(2, '0')}.${startDate!.day.toString().padLeft(2, '0')}',
               textAlign: TextAlign.center,
               style: const TextStyle(

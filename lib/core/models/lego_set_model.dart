@@ -14,6 +14,11 @@ class LegoSetModel {
   final List<String>? missingItems;
   final String createdAt;
   final String? imgUrl;
+  final String? visibility; // 'public' | 'friends_only'
+  final String? ownerName;
+  final double? averageRating;
+  final int? reviewCount;
+  final bool? scanBeforeReturn;
 
   const LegoSetModel({
     required this.id,
@@ -31,6 +36,11 @@ class LegoSetModel {
     this.missingItems,
     required this.createdAt,
     this.imgUrl,
+    this.visibility,
+    this.ownerName,
+    this.averageRating,
+    this.reviewCount,
+    this.scanBeforeReturn,
   });
 
   factory LegoSetModel.fromJson(Map<String, dynamic> json) {
@@ -52,6 +62,11 @@ class LegoSetModel {
           .toList(),
       createdAt: json['created_at'] as String? ?? '',
       imgUrl: json['img_url'] as String?,
+      visibility: json['visibility'] as String?,
+      ownerName: json['owner_name'] as String?,
+      averageRating: (json['average_rating'] as num?)?.toDouble(),
+      reviewCount: json['review_count'] as int?,
+      scanBeforeReturn: json['scan_before_return'] as bool?,
     );
   }
 }

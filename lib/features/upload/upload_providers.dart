@@ -5,8 +5,6 @@ import 'package:lego_rental_frontend/features/auth/auth_providers.dart';
 import 'package:lego_rental_frontend/features/sets/data/sets_repository.dart';
 import 'package:lego_rental_frontend/features/sets/sets/sets_providers.dart';
 
-
-
 class UploadState {
   final bool isLoading;
   final bool success;

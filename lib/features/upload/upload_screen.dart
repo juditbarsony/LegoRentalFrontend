@@ -21,6 +21,7 @@ class _UploadScreenState extends ConsumerState<UploadScreen> {
 
   bool _requireScan = false;
   bool _isPublic = true;
+  String _visibility = 'public'; // 'public' | 'friends_only'
   String? _selectedState;
 
   // Availability periódusok: {'start_date': '...', 'end_date': '...'}
@@ -87,6 +88,7 @@ class _UploadScreenState extends ConsumerState<UploadScreen> {
     final deposit = double.tryParse(_depositController.text.trim()) ?? 0.0;
     final setNum = _setNumController.text.trim();
     final title = _titleController.text.trim();
+    final isPublic = _visibility == 'public';
 
     if (location.isEmpty) {
       ScaffoldMessenger.of(
@@ -103,16 +105,14 @@ class _UploadScreenState extends ConsumerState<UploadScreen> {
       return;
     }
 
-    ref
-        .read(uploadProvider.notifier)
-        .uploadSet(
+    ref.read(uploadProvider.notifier).uploadSet(
           setNum: setNum.isEmpty ? null : setNum,
           title: title.isEmpty ? null : title,
           location: location,
           rentalPrice: rentalPrice,
           deposit: deposit,
           scanRequired: _requireScan,
-          isPublic: _isPublic,
+          isPublic: isPublic,
           state: _selectedState,
           notes: _notesController.text.trim().isEmpty
               ? null
@@ -237,19 +237,55 @@ class _UploadScreenState extends ConsumerState<UploadScreen> {
                 ),
 
                 // ── Public checkbox ───────────────────────────────────
-                Row(
-                  children: [
-                    const Text(
-                      'Public',
-                      style: TextStyle(color: Color(0xFF252525), fontSize: 14),
+                DropdownButtonFormField<String>(
+                  value: _visibility,
+                  isExpanded: true,
+                  isDense: true,
+                  decoration: InputDecoration(
+                    labelText: 'Visibility',
+                    labelStyle: const TextStyle(
+                      color: Color(0xFF848383),
+                      fontSize: 14,
                     ),
-                    const Spacer(),
-                    Checkbox(
-                      value: _isPublic,
-                      onChanged: (v) => setState(() => _isPublic = v ?? true),
-                      activeColor: const Color(0xFF848383),
+                    filled: true,
+                    fillColor: Colors.white,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: Colors.grey[400]!),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: Colors.grey[400]!),
+                    ),
+                  ),
+                  icon: const Icon(Icons.arrow_drop_down,
+                      color: Color(0xFF391713)),
+                  items: const [
+                    DropdownMenuItem(
+                      value: 'public',
+                      child: Text(
+                        'Public – visible to everyone',
+                        style:
+                            TextStyle(color: Color(0xFF391713), fontSize: 14),
+                      ),
+                    ),
+                    DropdownMenuItem(
+                      value: 'friends_only',
+                      child: Text(
+                        'Friends only – only visible to your friends',
+                        style:
+                            TextStyle(color: Color(0xFF391713), fontSize: 14),
+                      ),
                     ),
                   ],
+                  onChanged: (v) {
+                    if (v == null) return;
+                    setState(() => _visibility = v);
+                  },
                 ),
                 const SizedBox(height: 16),
 
