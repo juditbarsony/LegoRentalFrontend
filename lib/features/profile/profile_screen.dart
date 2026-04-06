@@ -166,8 +166,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5CB58),
       body: AppBackground(
-        title: 'My profile',
-        onBack: null,
+        title: 'My Profile',
+        onBack: () {
+          Navigator.pop(context);
+        },
         onHome: () {
           Navigator.pushAndRemoveUntil(
             context,
@@ -184,14 +186,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               // Profilkép
               Stack(
                 children: [
-                  CircleAvatar(
+                  const CircleAvatar(
                     radius: 60,
-                    backgroundColor: Colors.grey[300],
-                    child: const Icon(
-                      Icons.person,
-                      size: 60,
-                      color: Colors.grey,
-                    ),
+                    backgroundImage: AssetImage('assets/images/bj_lego.JPG'),
+                    backgroundColor: Colors.transparent,
                   ),
                   Positioned(
                     bottom: 0,
@@ -221,7 +219,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 readOnly: true,
               ),
 
-              const SizedBox(height: 16),
+              const SizedBox(height: 14),
 
               // Password
               _ProfileField(
@@ -241,21 +239,21 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 ),
               ),
 
-              const SizedBox(height: 16),
-                            // Email
+              const SizedBox(height: 14),
+              // Email
               _ProfileField(label: 'Email', value: 'test@lego.com'),
 
-              const SizedBox(height: 16),
+              const SizedBox(height: 14),
 
               // Mobile Number
               _ProfileField(label: 'Mobile Number', value: '+ 123 456 789'),
 
-              const SizedBox(height: 16),
+              const SizedBox(height: 14),
 
               // Location (City)
               _ProfileField(label: 'Location (City)', value: 'Budapest'),
 
-              const SizedBox(height: 16),
+              const SizedBox(height: 14),
 
               // Update Profile gomb
               ElevatedButton(
@@ -281,112 +279,162 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   ),
                 ),
               ),
+
+              const SizedBox(height: 16),
               // --- FRIENDS BLOKK KEZDETE ---
-
-              const SizedBox(height: 24),
-              const Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  'Friends',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-
-
-              if (isLoadingUsers)
-                const CircularProgressIndicator()
-              else if (availableUsers.isEmpty)
-                const Text('Nincs más elérhető felhasználó.')
-              else
-                DropdownButtonFormField<int>(
-                  value: selectedUserId,
-                  decoration: const InputDecoration(
-                    labelText: 'Select user',
-                    border: OutlineInputBorder(),
-                  ),
-                  items: availableUsers.map((user) {
-                    return DropdownMenuItem<int>(
-                      value: user.id,
-                      child: Text(user.fullName),
-                    );
-                  }).toList(),
-                  onChanged: isActionLoading
-                      ? null
-                      : (value) {
-                          setState(() {
-                            selectedUserId = value;
-                          });
-                        },
-                ),
-
-              const SizedBox(height: 12),
-
-              SizedBox(
+              Container(
                 width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: (selectedUserId == null || isActionLoading)
-                      ? null
-                      : addSelectedFriend,
-                  child: isActionLoading
-                      ? const SizedBox(
-                          height: 18,
-                          width: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Text('Add friend'),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: Colors.grey[300]!),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 24),
+                    const Align(
+                      alignment: Alignment.centerLeft,
+                      child: const Text(
+                        'Friends',
+                        style: TextStyle(
+                          color: Color(0xFF391713),
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                   // const SizedBox(height: 12),
+
+                    if (isLoadingUsers)
+                      const CircularProgressIndicator()
+                    else if (availableUsers.isEmpty)
+                      const Text('Nincs más elérhető felhasználó.')
+                    else
+                      DropdownButtonFormField<int>(
+                        value: selectedUserId,
+                        decoration: InputDecoration(
+                          labelText: 'Select user',
+                          labelStyle: const TextStyle(
+                            color: Color(0xFF848383),
+                            fontSize: 14,
+                          ),
+                          filled: true,
+                          fillColor: const Color(0xFFFFF2BE),
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 12),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                            borderSide: BorderSide.none,
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                            borderSide: const BorderSide(
+                                color: Color(0xFFB89B44), width: 1),
+                          ),
+                        ),
+                        borderRadius: BorderRadius.circular(14),
+                        icon: const Icon(Icons.keyboard_arrow_down_rounded),
+                        dropdownColor: Colors.white,
+                        items: availableUsers.map((user) {
+                          return DropdownMenuItem<int>(
+                            value: user.id,
+                            child: Text(user.fullName),
+                          );
+                        }).toList(),
+                        onChanged: isActionLoading
+                            ? null
+                            : (value) {
+                                setState(() {
+                                  selectedUserId = value;
+                                });
+                              },
+                      ),
+
+                    const SizedBox(height: 12),
+
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: (selectedUserId == null || isActionLoading)
+                            ? null
+                            : addSelectedFriend,
+                        child: isActionLoading
+                            ? const SizedBox(
+                                height: 18,
+                                width: 18,
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Text('Add friend'),
+                      ),
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    if (errorMessage != null)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Text(
+                          errorMessage!,
+                          style: const TextStyle(color: Colors.red),
+                        ),
+                      ),
+
+                    if (isLoadingFriends)
+                      const CircularProgressIndicator()
+                    else if (friends.isEmpty)
+                      const Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text('No friends yet.'),
+                      )
+                    else
+                      ListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: friends.length,
+                        itemBuilder: (context, index) {
+                          final friend = friends[index];
+                          return ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: const CircleAvatar(
+                              radius: 18,
+                              backgroundImage:
+                                  AssetImage('assets/images/Untitled-2.png'),
+                              backgroundColor: Colors.transparent,
+                            ),
+                            title: Text(
+                              friend.fullName,
+                              style: const TextStyle(
+                                color: Color(0xFF252525),
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            subtitle: Text(
+                              friend.email,
+                              style: const TextStyle(
+                                color: Color(0xFF848383),
+                                fontSize: 12,
+                              ),
+                            ),
+                            trailing: IconButton(
+                              icon: const Icon(Icons.close, size: 20),
+                              onPressed: isActionLoading
+                                  ? null
+                                  : () => deleteFriend(friend.id),
+                            ),
+                          );
+                        },
+                      ),
+
+                    // --- FRIENDS BLOKK VÉGE ---
+
+                    const SizedBox(height: 6),
+                  ],
                 ),
               ),
-
-              const SizedBox(height: 12),
-
-              if (errorMessage != null)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Text(
-                    errorMessage!,
-                    style: const TextStyle(color: Colors.red),
-                  ),
-                ),
-
-              if (isLoadingFriends)
-                const CircularProgressIndicator()
-              else if (friends.isEmpty)
-                const Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text('No friends yet.'),
-                )
-              else
-                ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: friends.length,
-                  itemBuilder: (context, index) {
-                    final friend = friends[index];
-                    return ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: Text(friend.fullName),
-                      subtitle: Text(friend.email),
-                      trailing: IconButton(
-                        icon: const Icon(Icons.delete_outline),
-                        onPressed: isActionLoading
-                            ? null
-                            : () => deleteFriend(friend.id),
-                      ),
-                    );
-                  },
-                ),
-
-              // --- FRIENDS BLOKK VÉGE ---
-
-
-              const SizedBox(height: 32),
-
-
-
               const SizedBox(height: 32),
 
               Container(
@@ -493,26 +541,53 @@ class _ProfileField extends StatelessWidget {
           label,
           style: const TextStyle(
             color: Color(0xFF391713),
-            fontSize: 14,
+            fontSize: 13,
             fontWeight: FontWeight.w500,
+            height: 1.2,
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 6),
         TextField(
           readOnly: readOnly,
           obscureText: obscureText,
+          style: const TextStyle(
+            color: Color(0xFF848383),
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+          ),
           decoration: InputDecoration(
+            isDense: true,
             filled: true,
-            fillColor: const Color(0xFFF3E9B5),
+            fillColor: const Color(0xFFFFF2BE),
             hintText: value,
+            hintStyle: const TextStyle(
+              color: Color(0xFF848383),
+              fontSize: 14,
+             // fontWeight: FontWeight.w500,
+            ),
             suffixIcon: suffixIcon,
+            suffixIconConstraints: const BoxConstraints(
+              minWidth: 40,
+              minHeight: 40,
+            ),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(13),
+              borderRadius: BorderRadius.circular(14),
               borderSide: BorderSide.none,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide.none,
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: const BorderSide(
+                color: Color(0xFFD8BE67),
+                width: 1,
+              ),
             ),
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 16,
-              vertical: 12,
+              vertical: 11,
             ),
           ),
         ),

@@ -26,3 +26,6 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/images/bj_lego.JPG
+    - assets/images/Untitled-2.png
