@@ -1,9 +1,10 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:lego_rental_frontend/core/models/review_model.dart';
+import 'package:lego_rental_frontend/core/services/api_service.dart';
 
 class ReviewRepository {
-  final String baseUrl = 'http://10.0.2.2:8000'; // vagy a tiéd
+  final String baseUrl = ApiService.baseUrl; // vagy a tiéd
 
   Future<List<ReviewModel>> getReviewsForUser({
     required int userId,

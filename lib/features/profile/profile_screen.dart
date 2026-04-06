@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:lego_rental_frontend/core/models/user_model.dart';
+import 'package:lego_rental_frontend/core/services/users_service.dart';
 import 'package:lego_rental_frontend/core/widgets/app_background.dart';
+import 'package:lego_rental_frontend/features/friends/friends_service.dart';
 import 'package:lego_rental_frontend/features/home/home_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lego_rental_frontend/features/auth/auth_providers.dart';
@@ -15,56 +18,140 @@ class ProfileScreen extends ConsumerStatefulWidget {
 
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   bool _obscurePassword = true;
+  late FriendsService friendsService;
 
-  String? _selectedFriend;
-  final List<String> _allUsers = [
-    'Anna Kovács',
-    'Bence Nagy',
-    'Réka Tóth',
-    'Dániel Szabó',
-    'Eszter Varga',
-  ];
+  List<UserModel> friends = [];
+  bool isLoadingFriends = true;
+  bool isActionLoading = false;
+  String? errorMessage;
+  int? selectedUserId;
 
-  final List<String> _friends = [
-    'Anna Kovács',
-  ];
-
-  void _addFriend() {
-    if (_selectedFriend == null) return;
-    if (_friends.contains(_selectedFriend)) return;
-
-    setState(() {
-      _friends.add(_selectedFriend!);
-      _selectedFriend = null;
-    });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Friend added.')),
-    );
-  }
-
-  void _removeFriend(String name) {
-    setState(() {
-      _friends.remove(name);
-    });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Friend removed.')),
-    );
-  }
+  late UsersService usersService;
+  List<UserModel> availableUsers = [];
+  bool isLoadingUsers = true;
 
   @override
   void initState() {
     super.initState();
 
-    Future.microtask(() {
+    Future.microtask(() async {
       final authState = ref.read(authProvider);
       final userId = authState.userId;
+      final token = authState.accessToken;
+
+      if (token != null) {
+        friendsService = FriendsService(token: token);
+        usersService = UsersService(token: token);
+        await Future.wait([
+          loadFriends(),
+          loadAvailableUsers(),
+        ]);
+      }
 
       if (userId != null) {
         ref.read(reviewProvider.notifier).loadUserReviews(userId: userId);
       }
     });
+  }
+
+  Future<void> loadFriends() async {
+    setState(() {
+      isLoadingFriends = true;
+      errorMessage = null;
+    });
+
+    try {
+      final result = await friendsService.getFriends();
+      setState(() {
+        friends = result;
+      });
+    } catch (e) {
+      setState(() {
+        errorMessage = e.toString().replaceFirst('Exception: ', '');
+      });
+    } finally {
+      setState(() {
+        isLoadingFriends = false;
+      });
+    }
+  }
+
+  Future<void> addSelectedFriend() async {
+    if (selectedUserId == null) return;
+
+    setState(() {
+      isActionLoading = true;
+      errorMessage = null;
+    });
+
+    try {
+      await friendsService.addFriend(selectedUserId!);
+      await loadFriends();
+      setState(() {
+        selectedUserId = null;
+      });
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Barát sikeresen hozzáadva')),
+      );
+    } catch (e) {
+      setState(() {
+        errorMessage = e.toString().replaceFirst('Exception: ', '');
+      });
+    } finally {
+      if (!mounted) return;
+      setState(() {
+        isActionLoading = false;
+      });
+    }
+  }
+
+  Future<void> deleteFriend(int friendId) async {
+    setState(() {
+      isActionLoading = true;
+      errorMessage = null;
+    });
+
+    try {
+      await friendsService.deleteFriend(friendId);
+      await loadFriends();
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Barát eltávolítva')),
+      );
+    } catch (e) {
+      setState(() {
+        errorMessage = e.toString().replaceFirst('Exception: ', '');
+      });
+    } finally {
+      if (!mounted) return;
+      setState(() {
+        isActionLoading = false;
+      });
+    }
+  }
+
+  Future<void> loadAvailableUsers() async {
+    setState(() {
+      isLoadingUsers = true;
+    });
+
+    try {
+      final users = await usersService.getUsers();
+      setState(() {
+        availableUsers = users;
+      });
+    } catch (e) {
+      setState(() {
+        errorMessage ??= e.toString().replaceFirst('Exception: ', '');
+      });
+    } finally {
+      setState(() {
+        isLoadingUsers = false;
+      });
+    }
   }
 
   @override
@@ -130,7 +217,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               // Full name
               _ProfileField(
                 label: 'Full name',
-                value: 'example@example.com',
+                value: 'Bársony Judit',
                 readOnly: true,
               ),
 
@@ -155,9 +242,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               ),
 
               const SizedBox(height: 16),
-
-              // Email
-              _ProfileField(label: 'Email', value: 'example@example.com'),
+                            // Email
+              _ProfileField(label: 'Email', value: 'test@lego.com'),
 
               const SizedBox(height: 16),
 
@@ -169,7 +255,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               // Location (City)
               _ProfileField(label: 'Location (City)', value: 'Budapest'),
 
-              const SizedBox(height: 32),
+              const SizedBox(height: 16),
 
               // Update Profile gomb
               ElevatedButton(
@@ -195,166 +281,112 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
-              const SizedBox(height: 32),
+              // --- FRIENDS BLOKK KEZDETE ---
 
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: Colors.grey[300]!),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Friends',
-                      style: TextStyle(
-                        color: Color(0xFF391713),
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    const Text(
-                      'Friends can see sets marked as "Friends only".',
-                      style: TextStyle(
-                        color: Color(0xFF848383),
-                        fontSize: 13,
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    DropdownButtonFormField<String>(
-                      value: _selectedFriend,
-                      isExpanded: true,
-                      decoration: InputDecoration(
-                        labelText: 'Select user',
-                        labelStyle: const TextStyle(
-                          color: Color(0xFF848383),
-                          fontSize: 14,
-                        ),
-                        filled: true,
-                        fillColor: const Color(0xFFF9F9F9),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide(color: Colors.grey[400]!),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide(color: Colors.grey[400]!),
-                        ),
-                      ),
-                      items: _allUsers
-                          .where((u) => !_friends.contains(u))
-                          .map(
-                            (user) => DropdownMenuItem<String>(
-                              value: user,
-                              child: Text(
-                                user,
-                                style: const TextStyle(
-                                  color: Color(0xFF391713),
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ),
-                          )
-                          .toList(),
-                      onChanged: (value) {
-                        setState(() => _selectedFriend = value);
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton(
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: const Color(0xFF391713),
-                          side: BorderSide(color: Colors.grey[400]!),
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        onPressed: _selectedFriend == null ? null : _addFriend,
-                        child: const Text('Add friend'),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'My friends',
-                      style: TextStyle(
-                        color: Color(0xFF391713),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    if (_friends.isEmpty)
-                      const Text(
-                        'No friends added yet.',
-                        style: TextStyle(
-                          color: Color(0xFF848383),
-                          fontSize: 13,
-                        ),
-                      )
-                    else
-                      Column(
-                        children: _friends.map((friend) {
-                          return Container(
-                            margin: const EdgeInsets.only(bottom: 8),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 10,
-                            ),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF9F9F9),
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(color: Colors.grey[300]!),
-                            ),
-                            child: Row(
-                              children: [
-                                const CircleAvatar(
-                                  radius: 14,
-                                  backgroundColor: Color(0xFFE0E0E0),
-                                  child: Icon(
-                                    Icons.person,
-                                    size: 16,
-                                    color: Color(0xFF848383),
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: Text(
-                                    friend,
-                                    style: const TextStyle(
-                                      color: Color(0xFF252525),
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ),
-                                IconButton(
-                                  onPressed: () => _removeFriend(friend),
-                                  icon: const Icon(
-                                    Icons.close,
-                                    size: 18,
-                                    color: Color(0xFF848383),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                  ],
+              const SizedBox(height: 24),
+              const Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Friends',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
+              const SizedBox(height: 12),
+
+
+              if (isLoadingUsers)
+                const CircularProgressIndicator()
+              else if (availableUsers.isEmpty)
+                const Text('Nincs más elérhető felhasználó.')
+              else
+                DropdownButtonFormField<int>(
+                  value: selectedUserId,
+                  decoration: const InputDecoration(
+                    labelText: 'Select user',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: availableUsers.map((user) {
+                    return DropdownMenuItem<int>(
+                      value: user.id,
+                      child: Text(user.fullName),
+                    );
+                  }).toList(),
+                  onChanged: isActionLoading
+                      ? null
+                      : (value) {
+                          setState(() {
+                            selectedUserId = value;
+                          });
+                        },
+                ),
+
+              const SizedBox(height: 12),
+
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: (selectedUserId == null || isActionLoading)
+                      ? null
+                      : addSelectedFriend,
+                  child: isActionLoading
+                      ? const SizedBox(
+                          height: 18,
+                          width: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('Add friend'),
+                ),
+              ),
+
+              const SizedBox(height: 12),
+
+              if (errorMessage != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Text(
+                    errorMessage!,
+                    style: const TextStyle(color: Colors.red),
+                  ),
+                ),
+
+              if (isLoadingFriends)
+                const CircularProgressIndicator()
+              else if (friends.isEmpty)
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text('No friends yet.'),
+                )
+              else
+                ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: friends.length,
+                  itemBuilder: (context, index) {
+                    final friend = friends[index];
+                    return ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(friend.fullName),
+                      subtitle: Text(friend.email),
+                      trailing: IconButton(
+                        icon: const Icon(Icons.delete_outline),
+                        onPressed: isActionLoading
+                            ? null
+                            : () => deleteFriend(friend.id),
+                      ),
+                    );
+                  },
+                ),
+
+              // --- FRIENDS BLOKK VÉGE ---
+
+
+              const SizedBox(height: 32),
+
+
+
               const SizedBox(height: 32),
 
               Container(
