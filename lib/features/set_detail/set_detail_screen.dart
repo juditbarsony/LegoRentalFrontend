@@ -115,6 +115,12 @@ class _SetDetailContentState extends State<SetDetailContent> {
   Widget build(BuildContext context) {
     final s = widget.set;
 
+    String _fakeRating(dynamic seed) {
+      final base = seed.toString().codeUnits.fold(0, (sum, c) => sum + c);
+      final value = 2.0 + (base % 31) / 10.0; // 2.0 - 5.0
+      return value.toStringAsFixed(1);
+    }
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -199,7 +205,6 @@ class _SetDetailContentState extends State<SetDetailContent> {
                         ],
                       ),
                       const SizedBox(height: 6),
-                      
                       if (s.setNum.isNotEmpty)
                         Text(
                           'Set: ${s.setNum}',
@@ -234,85 +239,6 @@ class _SetDetailContentState extends State<SetDetailContent> {
             ),
           ),
           const SizedBox(height: 16),
-// ── Részletek (info grid) ────────────────────────────────────────
-/*           GridView.count(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            crossAxisCount: 2,
-            mainAxisSpacing: 0,
-            crossAxisSpacing: 2,
-            childAspectRatio: 4.3,
-            children: [
-              _infoTile('Deposit', '${s.deposit.toStringAsFixed(0)} Ft'),
-              if (s.numberOfItems != null)
-                _infoTile('Number of items', '${s.numberOfItems} db'),
-              if (s.state != null) _infoTile('State', s.state!),
-              _infoTile(
-                'Visibility',
-                s.visibility == 'friends_only' ? 'Friends only' : 'Public',
-              ),
-              if (s.ownerName != null) _infoTile('Owner', s.ownerName!),
-              if (s.averageRating != null)
-                _infoTile(
-                  'Rating',
-                  '${s.averageRating!.toStringAsFixed(1)} / 5'
-                      '${s.reviewCount != null ? ' (${s.reviewCount} reviews)' : ''}',
-                ),
-              _infoTile(
-                'Scanning before return',
-                s.scanBeforeReturn == true ? 'Yes' : 'No',
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          if (s.notes != null &&
-              s.notes!.isNotEmpty &&
-              s.notes != 'string') ...[
-            const SizedBox(height: 8),
-            const Text(
-              'Notes',
-              style: TextStyle(
-                color: Color(0xFF391713),
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              s.notes!,
-              style: const TextStyle(color: Color(0xFF252525), fontSize: 14),
-            ),
-            const SizedBox(height: 16),
-          ],
-
-          // ── Scan checkbox ────────────────────────────────────────────────
-/*           Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: Colors.grey[300]!),
-            ),
-            child: Row(
-              children: const [
-                Icon(Icons.qr_code_scanner, size: 18, color: Color(0xFF848383)),
-                SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Scanning required before return',
-                    style: TextStyle(
-                      color: Color(0xFF252525),
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ), */
-          const SizedBox(height: 16), */
 
           Container(
             width: double.infinity,
@@ -322,42 +248,79 @@ class _SetDetailContentState extends State<SetDetailContent> {
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: Colors.grey[300]!),
             ),
-            child: GridView.count(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              crossAxisCount: 2,
-              mainAxisSpacing: 4,
-              crossAxisSpacing: 10,
-              childAspectRatio: 3.8,
+            child: Wrap(
+              spacing: 10,
+              runSpacing: 8,
               children: [
-                _infoTile('Location', s.location),
-                _infoTile('Rental price',
-                    '${s.rentalPrice.toStringAsFixed(0)} Ft / day'),
-                _infoTile('Deposit', '${s.deposit.toStringAsFixed(0)} Ft'),
+                SizedBox(
+                  width: (MediaQuery.of(context).size.width - 72) / 2,
+                  child: _infoTile('Location', s.location),
+                ),
+                SizedBox(
+                  width: (MediaQuery.of(context).size.width - 72) / 2,
+                  child: _infoTile(
+                    'Rental price',
+                    '${s.rentalPrice.toStringAsFixed(0)} Ft / day',
+                  ),
+                ),
+                SizedBox(
+                  width: (MediaQuery.of(context).size.width - 72) / 2,
+                  child: _infoTile(
+                      'Deposit', '${s.deposit.toStringAsFixed(0)} Ft'),
+                ),
                 if (s.numberOfItems != null)
-                  _infoTile('Number of items', '${s.numberOfItems}'),
+                  SizedBox(
+                    width: (MediaQuery.of(context).size.width - 72) / 2,
+                    child: _infoTile('Number of items', '${s.numberOfItems}'),
+                  ),
                 if (s.state != null && s.state!.isNotEmpty)
-                  _infoTile('State', s.state!),
-                _infoTile(
-                    'Scanning before return', s.scanRequired ? 'Yes' : 'No'),
-                _infoTile(
-                  'Visibility',
-                  s.visibility == 'friends_only'
-                      ? 'Friends only'
-                      : (s.public ? 'Public' : 'Private'),
+                  SizedBox(
+                    width: (MediaQuery.of(context).size.width - 72) / 2,
+                    child: _infoTile('State', s.state!),
+                  ),
+                SizedBox(
+                  width: (MediaQuery.of(context).size.width - 72) / 2,
+                  child: _infoTile(
+                    'Scanning before return',
+                    s.scanRequired ? 'Yes' : 'No',
+                  ),
+                ),
+                SizedBox(
+                  width: (MediaQuery.of(context).size.width - 72) / 2,
+                  child: _infoTile(
+                    'Visibility',
+                    s.visibility == 'friends_only'
+                        ? 'Friends only'
+                        : (s.public ? 'Public' : 'Private'),
+                  ),
                 ),
                 if (s.ownerName != null && s.ownerName!.isNotEmpty)
-                  _infoTile('Owner', s.ownerName!),
-                if (s.averageRating != null)
-                  _infoTile(
+                  SizedBox(
+                    width: (MediaQuery.of(context).size.width - 72) / 2,
+                    child: _infoTile('Owner', s.ownerName!),
+                  ),
+                SizedBox(
+                  width: (MediaQuery.of(context).size.width - 72) / 2,
+                  child: _infoTile(
                     'Rating',
-                    '${s.averageRating!.toStringAsFixed(1)} / 5'
-                        '${s.reviewCount != null ? ' (${s.reviewCount})' : ''}',
+                    s.averageRating != null
+                        ? '${s.averageRating!.toStringAsFixed(1)} / 5'
+                            '${s.reviewCount != null ? ' (${s.reviewCount})' : ''}'
+                        : '${_fakeRating(s.id)} / 5',
+                  ),
+                ),
+                if (s.averageRating != null)
+                  SizedBox(
+                    width: (MediaQuery.of(context).size.width - 72) / 2,
+                    child: _infoTile(
+                      'Rating',
+                      '${s.averageRating!.toStringAsFixed(1)} / 5'
+                          '${s.reviewCount != null ? ' (${s.reviewCount})' : ''}',
+                    ),
                   ),
               ],
             ),
           ),
-          const SizedBox(height: 16),
 
           if (s.averageRating != null || s.reviewCount != null) ...[
             Container(
@@ -391,7 +354,7 @@ class _SetDetailContentState extends State<SetDetailContent> {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 16),
                   if (s.reviewCount != null)
                     Text(
                       '(${s.reviewCount} reviews)',
@@ -403,8 +366,9 @@ class _SetDetailContentState extends State<SetDetailContent> {
                 ],
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 8),
           ],
+          const SizedBox(height: 8),
 
           //--Elérhetőség-----------------------------------------------------
           const Text(
@@ -484,7 +448,7 @@ class _SetDetailContentState extends State<SetDetailContent> {
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFD3D3D3),
-                padding: const EdgeInsets.symmetric(vertical: 14),
+                padding: const EdgeInsets.symmetric(vertical: 12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(13),
                 ),
@@ -705,7 +669,7 @@ class _AvailabilityCalendarState extends State<AvailabilityCalendar> {
     ).weekday; // 1=hétfő
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),

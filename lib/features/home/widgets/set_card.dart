@@ -18,24 +18,24 @@ Widget build(BuildContext context) {
     onTap: onTap,
     child: Container(
       decoration: BoxDecoration(
-        color: const Color.fromARGB(255, 255, 255, 255),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Kép rész
-          Expanded(
-            flex: 4,
-            child: ClipRRect(
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(16),
-                topRight: Radius.circular(16),
-              ),
+          // Kép rész – fix magasság
+          ClipRRect(
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(16),
+              topRight: Radius.circular(16),
+            ),
+            child: SizedBox(
+              height: 120, // kisebb kép, kevesebb overflow esély
+              width: double.infinity,
               child: (imageUrl != null)
                   ? Image.network(
-                      imageUrl,  // ← proxy URL
-                      width: double.infinity,
+                      imageUrl,
                       fit: BoxFit.cover,
                       loadingBuilder: (context, child, progress) {
                         if (progress == null) return child;
@@ -51,39 +51,36 @@ Widget build(BuildContext context) {
                   : _buildPlaceholder(),
             ),
           ),
-          // Szöveg rész
-          Expanded(
-            flex: 2,
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,  // ← spaceBetween helyett
-                children: [
-                  Text(
-                    set.title,
-                    style: const TextStyle(
-                      color: Color(0xFF391713),
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+
+          // Szöveg rész – rugalmas, de nem kényszerített Expanded
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  set.title,
+                  style: const TextStyle(
+                    color: Color(0xFF391713),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
                   ),
-                  ...[
-                  const SizedBox(height: 1),  // ← kis rés
-                  Text(
-                    '#${set.setNum}',
-                    style: const TextStyle(
-                      color: Color(0xFF848383),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                    ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '#${set.setNum}',
+                  style: const TextStyle(
+                    color: Color(0xFF848383),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
                   ),
-                ],
-                ],
-              ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
             ),
           ),
         ],
