@@ -23,42 +23,41 @@ class AppBackground extends StatelessWidget {
           children: [
             // Felső sárga header sor
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-              child: Row(
-                children: [
-                  // Bal oldal: vissza gomb
-                  if (onBack != null)
-                    IconButton(
-                      onPressed: onBack,
-                      icon: const Icon(Icons.arrow_back, color: Colors.white),
-                    )
-                  else
-                    const SizedBox(width: 48),
+  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+  child: Row(
+    children: [
+      if (onBack != null)
+        IconButton(
+          onPressed: onBack,
+          icon: const Icon(Icons.arrow_back, color: Colors.white, size: 22),
+          visualDensity: VisualDensity.compact,
+        )
+      else
+        const SizedBox(width: 44),
 
-                  // Középen: cím
-                  Expanded(
-                    child: Text(
-                      title,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
+      Expanded(
+        child: Text(
+          title,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ),
 
-                  // Jobb oldal: home gomb
-                  if (onHome != null)
-                    IconButton(
-                      onPressed: onHome,
-                      icon: const Icon(Icons.home, color: Colors.white),
-                    )
-                  else
-                    const SizedBox(width: 48),
-                ],
-              ),
-            ),
+      if (onHome != null)
+        IconButton(
+          onPressed: onHome,
+          icon: const Icon(Icons.home, color: Colors.white, size: 22),
+          visualDensity: VisualDensity.compact,
+        )
+      else
+        const SizedBox(width: 44),
+    ],
+  ),
+),
 
             // Lekerekített világos panel
             Expanded(

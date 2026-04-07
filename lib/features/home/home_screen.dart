@@ -20,12 +20,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   int? _selectedThemeId;
 
   static const List<Map<String, dynamic>> _categories = [
-    {'label': 'City', 'themeId': 672, 'color': Color(0xFFFF6B6B)},
-    {'label': 'Star Wars', 'themeId': 171, 'color': Color(0xFF4ECDC4)},
-    {'label': 'Technic', 'themeId': 1, 'color': Color(0xFFFFE66D)},
-    {'label': 'Friends', 'themeId': 246, 'color': Color(0xFFA8E6CF)},
-    {'label': 'Creator', 'themeId': 22, 'color': Color(0xFFFFAA80)},
-    {'label': 'Harry Potter', 'themeId': 406, 'color': Color(0xFF9B59B6)},
+    {'label': 'City', 'themeId': 672, 'color': Color(0xFFF7E7B4)},
+    {'label': 'Star Wars', 'themeId': 171, 'color': Color(0xFFF2D98A)},
+    {'label': 'Technic', 'themeId': 1, 'color': Color(0xFFEBCB63)},
+    {'label': 'Friends', 'themeId': 246, 'color': Color(0xFFE2BE58)},
+    {'label': 'Creator', 'themeId': 22, 'color': Color(0xFFD6AF4B)},
+    {'label': 'Harry Potter', 'themeId': 406, 'color': Color(0xFFC99D3E)},
   ];
 
   @override
@@ -78,67 +78,123 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               const SizedBox(height: 16),
 
               // Keresőmező
+// Keresőmező
               Row(
                 children: [
                   Expanded(
-                    child: TextField(
-                      controller: _searchController,
-                      onSubmitted: _onSearch,
-                      textInputAction: TextInputAction.search,
-                      decoration: InputDecoration(
-                        filled: true,
-                        fillColor: const Color(0xFFF3E9B5),
-                        hintText: 'Search by name or set number...',
-                        prefixIcon: const Icon(Icons.search),
-                        suffixIcon: _searchController.text.isNotEmpty
-                            ? IconButton(
-                                icon: const Icon(Icons.clear),
-                                onPressed: () {
-                                  _searchController.clear();
-                                  _loadSets(themeId: _selectedThemeId);
-                                },
-                              )
-                            : null,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(13),
-                          borderSide: BorderSide.none,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(
+                          color: const Color(0xFFF0E6B8),
+                          width: 1,
                         ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.06),
+                            blurRadius: 10,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: TextField(
+                        controller: _searchController,
+                        onSubmitted: _onSearch,
+                        onChanged: (value) => setState(() {}),
+                        textInputAction: TextInputAction.search,
+                        style: const TextStyle(
+                          color: Color(0xFF252525),
+                          fontSize: 15,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        decoration: InputDecoration(
+                          filled: true,
+                          fillColor: Colors.transparent,
+                          hintText: 'Search by name or set number...',
+                          hintStyle: const TextStyle(
+                            color: Color(0xFF848383),
+                            fontSize: 15,
+                            fontWeight: FontWeight.w400,
+                          ),
+                          prefixIcon: const Icon(
+                            Icons.search,
+                            color: Color(0xFF5C5C5C),
+                            size: 22,
+                          ),
+                          suffixIcon: _searchController.text.isNotEmpty
+                              ? IconButton(
+                                  icon: const Icon(
+                                    Icons.clear,
+                                    color: Color(0xFF848383),
+                                    size: 20,
+                                  ),
+                                  onPressed: () {
+                                    _searchController.clear();
+                                    setState(() {});
+                                    _loadSets(themeId: _selectedThemeId);
+                                  },
+                                )
+                              : null,
+                          border: InputBorder.none,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 14,
+                          ),
                         ),
                       ),
-                      onChanged: (value) => setState(() {}),
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  IconButton(
-                    onPressed: () => Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (_) => const MainScreen()),
+                  const SizedBox(width: 10),
+                  Container(
+                    height: 52,
+                    width: 52,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: const Color(0xFFF0E6B8),
+                        width: 1,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 8,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
                     ),
-                    icon: const Icon(Icons.tune),
-                    color: const Color(0xFF391713),
+                    child: IconButton(
+                      onPressed: () => Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (_) => const MainScreen()),
+                      ),
+                      icon: const Icon(
+                        Icons.tune_rounded,
+                        color: Color(0xFF391713),
+                        size: 22,
+                      ),
+                    ),
                   ),
                 ],
               ),
 
               const SizedBox(height: 24),
               const Text(
-                "Let's Play!",
+                'Discover LEGO sets',
                 style: TextStyle(
                   color: Color(0xFF391713),
-                  fontSize: 28,
+                  fontSize: 22,
                   fontWeight: FontWeight.w700,
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
               const Text(
-                'Find your next LEGO adventure',
+                'Browse categories and available rentals',
                 style: TextStyle(
                   color: Color(0xFF252525),
-                  fontSize: 16,
-                  fontWeight: FontWeight.w300,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w400,
                 ),
               ),
 
@@ -155,33 +211,38 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
               // Kategória csík
               SizedBox(
-                height: 80,
+                height: 72,
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
                   itemCount: _categories.length,
                   itemBuilder: (context, index) {
                     final cat = _categories[index];
                     final isSelected = _selectedThemeId == cat['themeId'];
+
                     return GestureDetector(
                       onTap: () => _onCategoryTap(cat['themeId'] as int),
                       child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        width: 90,
+                        duration: const Duration(milliseconds: 220),
+                        curve: Curves.easeOut,
+                        width: 104,
                         margin: const EdgeInsets.only(right: 10),
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
                         decoration: BoxDecoration(
-                          color: cat['color'] as Color,
-                          borderRadius: BorderRadius.circular(14),
-                          border: isSelected
-                              ? Border.all(
-                                  color: const Color(0xFF391713),
-                                  width: 3,
-                                )
-                              : null,
+                          color: isSelected
+                              ? const Color(0xFFE4C766)
+                              : const Color(0xFFF6EFCF),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: isSelected
+                                ? const Color(0xFF391713)
+                                : const Color(0xFFE7DCA8),
+                            width: isSelected ? 1.6 : 1,
+                          ),
                           boxShadow: isSelected
                               ? [
                                   BoxShadow(
-                                    color: Colors.black.withOpacity(0.2),
-                                    blurRadius: 6,
+                                    color: Colors.black.withOpacity(0.10),
+                                    blurRadius: 8,
                                     offset: const Offset(0, 3),
                                   ),
                                 ]
@@ -191,19 +252,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           child: Text(
                             cat['label'] as String,
                             style: TextStyle(
-                              color: Colors.white,
+                              color: const Color(0xFF391713),
                               fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              shadows: isSelected
-                                  ? [
-                                      const Shadow(
-                                        color: Colors.black26,
-                                        blurRadius: 4,
-                                      ),
-                                    ]
-                                  : null,
+                              fontWeight: isSelected
+                                  ? FontWeight.w700
+                                  : FontWeight.w600,
+                              height: 1.2,
                             ),
                             textAlign: TextAlign.center,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ),
@@ -211,7 +269,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   },
                 ),
               ),
-
               const SizedBox(height: 24),
 
               // Szekció cím
@@ -219,8 +276,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 _selectedThemeId != null
                     ? '${_categories.firstWhere((c) => c['themeId'] == _selectedThemeId)['label']} sets'
                     : _searchController.text.trim().isEmpty
-                    ? 'Available sets'
-                    : 'Results for "${_searchController.text.trim()}"',
+                        ? 'Available sets'
+                        : 'Results for "${_searchController.text.trim()}"',
                 style: const TextStyle(
                   color: Color(0xFF391713),
                   fontSize: 20,
