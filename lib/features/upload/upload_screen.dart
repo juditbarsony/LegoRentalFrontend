@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lego_rental_frontend/core/theme/app_colors.dart';
 import 'package:lego_rental_frontend/core/widgets/app_background.dart';
+import 'package:lego_rental_frontend/core/widgets/app_primary_button.dart';
+import 'package:lego_rental_frontend/core/widgets/app_text_field.dart';
+import 'package:lego_rental_frontend/core/widgets/app_dropdown.dart';
+import 'package:lego_rental_frontend/core/widgets/app_section_card.dart';
 import 'package:lego_rental_frontend/features/home/home_screen.dart';
 import 'package:lego_rental_frontend/features/upload/upload_providers.dart';
 
@@ -20,11 +25,10 @@ class _UploadScreenState extends ConsumerState<UploadScreen> {
   final _notesController = TextEditingController();
 
   bool _requireScan = false;
-  bool _isPublic = true;
   String _visibility = 'public'; // 'public' | 'friends_only'
   String? _selectedState;
 
-  // Availability periódusok: {'start_date': '...', 'end_date': '...'}
+  // Availability periods: {'start_date': '...', 'end_date': '...'}
   final List<Map<String, String>> _periods = [];
 
   @override
@@ -91,9 +95,9 @@ class _UploadScreenState extends ConsumerState<UploadScreen> {
     final isPublic = _visibility == 'public';
 
     if (location.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Location is required.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Location is required.')),
+      );
       return;
     }
     if (setNum.isEmpty && title.isEmpty) {
@@ -125,7 +129,6 @@ class _UploadScreenState extends ConsumerState<UploadScreen> {
   Widget build(BuildContext context) {
     final uploadState = ref.watch(uploadProvider);
 
-    // Siker esetén visszanavigálás
     ref.listen(uploadProvider, (_, next) {
       if (next.success) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -144,7 +147,7 @@ class _UploadScreenState extends ConsumerState<UploadScreen> {
     });
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5CB58),
+      backgroundColor: AppColors.brandHeader,
       body: AppBackground(
         title: 'Upload Set',
         onBack: () => Navigator.pop(context),
@@ -157,234 +160,225 @@ class _UploadScreenState extends ConsumerState<UploadScreen> {
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const SizedBox(height: 16),
-
-                // ── Part number ───────────────────────────────────────
-                _buildTextField(
-                  controller: _setNumController,
-                  label: 'Part Number (e.g. 75192-1)',
-                ),
                 const SizedBox(height: 12),
 
-                // ── Title ─────────────────────────────────────────────
-                _buildTextField(
-                  controller: _titleController,
-                  label: 'Title (if no part number)',
-                ),
-                const SizedBox(height: 12),
-
-                // ── Location ──────────────────────────────────────────
-                _buildTextField(
-                  controller: _locationController,
-                  label: 'Location *',
-                ),
-                const SizedBox(height: 12),
-
-                // ── Rental price ──────────────────────────────────────
-                _buildTextField(
-                  controller: _rentalPriceController,
-                  label: 'Rental Price Per Day (Ft)',
-                  keyboardType: TextInputType.number,
-                ),
-                const SizedBox(height: 12),
-
-                // ── Deposit ───────────────────────────────────────────
-                _buildTextField(
-                  controller: _depositController,
-                  label: 'Deposit (Ft)',
-                  keyboardType: TextInputType.number,
-                ),
-                const SizedBox(height: 12),
-
-                // ── State dropdown ────────────────────────────────────
-                _buildDropdown(
-                  label: 'Condition',
-                  value: _selectedState,
-                  items: const ['NEW', 'USED', 'TRASH'],
-                  onChanged: (v) => setState(() => _selectedState = v),
-                ),
-                const SizedBox(height: 12),
-
-                // ── Notes ─────────────────────────────────────────────
-                _buildTextField(
-                  controller: _notesController,
-                  label: 'Notes',
-                  maxLines: 3,
-                ),
-                const SizedBox(height: 12),
-
-                // ── Require scan checkbox ─────────────────────────────
-                Row(
-                  children: [
-                    Expanded(
-                      child: const Text(
-                        'Require Scan Before Returning',
-                        style: TextStyle(
-                          color: Color(0xFF252525),
-                          fontSize: 14,
-                        ),
-                      ),
-                    ),
-                    Checkbox(
-                      value: _requireScan,
-                      onChanged: (v) =>
-                          setState(() => _requireScan = v ?? false),
-                      activeColor: const Color(0xFF848383),
-                    ),
-                  ],
-                ),
-
-                // ── Public checkbox ───────────────────────────────────
-                DropdownButtonFormField<String>(
-                  value: _visibility,
-                  isExpanded: true,
-                  isDense: true,
-                  decoration: InputDecoration(
-                    labelText: 'Visibility',
-                    labelStyle: const TextStyle(
-                      color: Color(0xFF848383),
-                      fontSize: 14,
-                    ),
-                    filled: true,
-                    fillColor: Colors.white,
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide(color: Colors.grey[400]!),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide(color: Colors.grey[400]!),
-                    ),
-                  ),
-                  icon: const Icon(Icons.arrow_drop_down,
-                      color: Color(0xFF391713)),
-                  items: const [
-                    DropdownMenuItem(
-                      value: 'public',
-                      child: Text(
-                        'Public – visible to everyone',
-                        style:
-                            TextStyle(color: Color(0xFF391713), fontSize: 14),
-                      ),
-                    ),
-                    DropdownMenuItem(
-                      value: 'friends_only',
-                      child: Text(
-                        'Friends only – only visible to your friends',
-                        style:
-                            TextStyle(color: Color(0xFF391713), fontSize: 14),
-                      ),
-                    ),
-                  ],
-                  onChanged: (v) {
-                    if (v == null) return;
-                    setState(() => _visibility = v);
-                  },
-                ),
-                const SizedBox(height: 16),
-
-                // ── Add availability period ────────────────────────────
-                GestureDetector(
-                  onTap: _addAvailablePeriod,
-                  child: Row(
+                // BASIC INFO
+                AppSectionCard(
+                  title: 'Basic info',
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        width: 32,
-                        height: 32,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFE0E0E0),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Icon(
-                          Icons.add,
-                          size: 20,
-                          color: Color(0xFF391713),
-                        ),
+                      AppTextField(
+                        label: 'Part number',
+                        hintText: 'e.g. 75192-1',
+                        controller: _setNumController,
                       ),
-                      const SizedBox(width: 8),
-                      const Text(
-                        'Add available period',
-                        style: TextStyle(
-                          color: Color(0xFF252525),
-                          fontSize: 14,
-                        ),
+                      const SizedBox(height: 12),
+                      AppTextField(
+                        label: 'Title (if no part number)',
+                        hintText: 'Set title',
+                        controller: _titleController,
+                      ),
+                      const SizedBox(height: 12),
+                      AppTextField(
+                        label: 'Location *',
+                        hintText: 'City or area',
+                        controller: _locationController,
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 12),
 
-                // ── Periódusok listája ────────────────────────────────
-                Container(
-                  width: double.infinity,
-                  constraints: const BoxConstraints(minHeight: 60),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.grey[300]!),
-                  ),
-                  padding: const EdgeInsets.all(12),
-                  child: _periods.isEmpty
-                      ? const Text(
-                          'No periods added yet.',
-                          style: TextStyle(
-                            color: Color(0xFF848383),
-                            fontSize: 13,
-                          ),
-                        )
-                      : Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: _periods
-                              .asMap()
-                              .entries
-                              .map(
-                                (entry) => Padding(
-                                  padding: const EdgeInsets.only(bottom: 6),
-                                  child: Row(
-                                    children: [
-                                      const Icon(
-                                        Icons.calendar_today,
-                                        size: 14,
-                                        color: Color(0xFF391713),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        child: Text(
-                                          '${entry.value['start_date']}  →  ${entry.value['end_date']}',
-                                          style: const TextStyle(
-                                            color: Color(0xFF252525),
-                                            fontSize: 13,
-                                          ),
-                                        ),
-                                      ),
-                                      GestureDetector(
-                                        onTap: () => setState(
-                                          () => _periods.removeAt(entry.key),
-                                        ),
-                                        child: const Icon(
-                                          Icons.close,
-                                          size: 16,
-                                          color: Color(0xFF848383),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
+                const SizedBox(height: 20),
+
+                // RENTAL DETAILS
+                AppSectionCard(
+                  title: 'Rental details',
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      AppTextField(
+                        label: 'Rental price per day (Ft)',
+                        hintText: 'Optional',
+                        controller: _rentalPriceController,
+                        keyboardType: TextInputType.number,
+                      ),
+                      const SizedBox(height: 12),
+                      AppTextField(
+                        label: 'Deposit (Ft)',
+                        hintText: 'Optional',
+                        controller: _depositController,
+                        keyboardType: TextInputType.number,
+                      ),
+                      const SizedBox(height: 12),
+                      AppDropdown<String>(
+                        label: 'Condition',
+                        hintText: 'Select condition',
+                        value: _selectedState,
+                        items: const ['NEW', 'USED', 'TRASH']
+                            .map(
+                              (item) => DropdownMenuItem<String>(
+                                value: item,
+                                child: Text(
+                                  item,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
-                              )
-                              .toList(),
-                        ),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (value) {
+                          setState(() => _selectedState = value);
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      AppTextField(
+                        label: 'Notes',
+                        hintText: 'Anything renters should know',
+                        controller: _notesController,
+                        keyboardType: TextInputType.multiline,
+                        maxLines: 3,
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              'Require scan before returning',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.copyWith(
+                                    color: AppColors.text,
+                                    fontSize: 14,
+                                  ),
+                            ),
+                          ),
+                          Checkbox(
+                            value: _requireScan,
+                            activeColor: AppColors.primary,
+                            onChanged: (v) => setState(
+                              () => _requireScan = v ?? false,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      AppDropdown<String>(
+                        label: 'Visibility',
+                        hintText: 'Who can see this set',
+                        value: _visibility,
+                        items: const [
+                          DropdownMenuItem(
+                            value: 'public',
+                            child: Text(
+                              'Public – visible to everyone',
+                            ),
+                          ),
+                          DropdownMenuItem(
+                            value: 'friends_only',
+                            child: Text(
+                              'Friends only – visible to your friends',
+                            ),
+                          ),
+                        ],
+                        onChanged: (value) {
+                          if (value == null) return;
+                          setState(() => _visibility = value);
+                        },
+                      ),
+                    ],
+                  ),
                 ),
+
+                const SizedBox(height: 20),
+
+                // AVAILABILITY
+                AppSectionCard(
+                  title: 'Availability',
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      OutlinedButton.icon(
+                        onPressed: _addAvailablePeriod,
+                        icon: const Icon(Icons.add),
+                        label: const Text('Add available period'),
+                      ),
+                      const SizedBox(height: 12),
+                      Container(
+                        width: double.infinity,
+                        constraints: const BoxConstraints(minHeight: 60),
+                        decoration: BoxDecoration(
+                          color: AppColors.surface,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppColors.border),
+                        ),
+                        padding: const EdgeInsets.all(12),
+                        child: _periods.isEmpty
+                            ? Text(
+                                'No periods added yet.',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(
+                                      color: AppColors.textMuted,
+                                    ),
+                              )
+                            : Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: _periods
+                                    .asMap()
+                                    .entries
+                                    .map(
+                                      (entry) => Padding(
+                                        padding:
+                                            const EdgeInsets.only(bottom: 6),
+                                        child: Row(
+                                          children: [
+                                            const Icon(
+                                              Icons.calendar_today,
+                                              size: 14,
+                                              color: AppColors.text,
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Expanded(
+                                              child: Text(
+                                                '${entry.value['start_date']} → ${entry.value['end_date']}',
+                                                style: Theme.of(context)
+                                                    .textTheme
+                                                    .bodySmall
+                                                    ?.copyWith(
+                                                      color: AppColors.text,
+                                                    ),
+                                              ),
+                                            ),
+                                            IconButton(
+                                              icon: const Icon(
+                                                Icons.close,
+                                                size: 16,
+                                                color: AppColors.textMuted,
+                                              ),
+                                              onPressed: () => setState(
+                                                () => _periods
+                                                    .removeAt(entry.key),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    )
+                                    .toList(),
+                              ),
+                      ),
+                    ],
+                  ),
+                ),
+
                 const SizedBox(height: 24),
 
-                // ── Hiba ─────────────────────────────────────────────
                 if (uploadState.errorMessage != null) ...[
                   Container(
+                    width: double.infinity,
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       color: Colors.red[50],
@@ -399,115 +393,16 @@ class _UploadScreenState extends ConsumerState<UploadScreen> {
                   const SizedBox(height: 16),
                 ],
 
-                // ── Save gomb ─────────────────────────────────────────
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFD3D3D3),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(13),
-                      ),
-                    ),
-                    onPressed: uploadState.isLoading ? null : _submit,
-                    child: uploadState.isLoading
-                        ? const CircularProgressIndicator(
-                            color: Color(0xFF391713),
-                          )
-                        : const Text(
-                            'Save',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w500,
-                              color: Color(0xFF391713),
-                            ),
-                          ),
-                  ),
+                AppPrimaryButton(
+                  label: uploadState.isLoading ? 'Saving…' : 'Save',
+                  onPressed: uploadState.isLoading ? null : _submit,
                 ),
+
                 const SizedBox(height: 16),
               ],
             ),
           ),
         ),
-      ),
-    );
-  }
-
-  // ── Helper widgetek ───────────────────────────────────────────────────────
-
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String label,
-    TextInputType keyboardType = TextInputType.text,
-    int maxLines = 1,
-  }) {
-    return TextField(
-      controller: controller,
-      keyboardType: keyboardType,
-      maxLines: maxLines,
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: const TextStyle(color: Color(0xFF848383), fontSize: 14),
-        filled: true,
-        fillColor: Colors.white,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 12,
-        ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: Colors.grey[400]!),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: Colors.grey[400]!),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDropdown({
-    required String label,
-    required String? value,
-    required List<String> items,
-    required ValueChanged<String?> onChanged,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey[400]!),
-      ),
-      child: DropdownButton<String>(
-        value: value,
-        hint: Text(
-          label,
-          style: const TextStyle(color: Color(0xFF848383), fontSize: 14),
-        ),
-        isExpanded: true,
-        underline: const SizedBox(),
-        icon: const Icon(Icons.arrow_drop_down, color: Color(0xFF391713)),
-        items: [
-          DropdownMenuItem<String>(
-            value: null,
-            child: Text(
-              'Select $label',
-              style: const TextStyle(color: Color(0xFF848383), fontSize: 14),
-            ),
-          ),
-          ...items.map(
-            (item) => DropdownMenuItem<String>(
-              value: item,
-              child: Text(
-                item,
-                style: const TextStyle(color: Color(0xFF391713), fontSize: 14),
-              ),
-            ),
-          ),
-        ],
-        onChanged: onChanged,
       ),
     );
   }

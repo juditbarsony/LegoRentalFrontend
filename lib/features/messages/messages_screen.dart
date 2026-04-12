@@ -154,13 +154,11 @@ class _MessagesScreenState extends State<MessagesScreen> {
                   ),
                   child: Row(
                     children: [
-                      Container(
-                        width: 32,
-                        height: 32,
-                        decoration: BoxDecoration(
-                          color: Colors.grey[300],
-                          borderRadius: BorderRadius.circular(16),
-                        ),
+                      const CircleAvatar(
+                        radius: 16,
+                        backgroundImage:
+                            AssetImage('assets/images/Untitled-2.png'),
+                        backgroundColor: Colors.transparent,
                       ),
                       const SizedBox(width: 8),
                       Expanded(
@@ -229,7 +227,6 @@ class _MessagesScreenState extends State<MessagesScreen> {
           ],
         ),
         const SizedBox(height: 8),
-
         Expanded(
           child: Container(
             decoration: BoxDecoration(
@@ -257,7 +254,6 @@ class _MessagesScreenState extends State<MessagesScreen> {
           ),
         ),
         const SizedBox(height: 8),
-
         Container(
           decoration: BoxDecoration(
             color: Colors.white,

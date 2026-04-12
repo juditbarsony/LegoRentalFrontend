@@ -3,22 +3,27 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lego_rental_frontend/core/models/availability_model.dart';
 import 'package:lego_rental_frontend/core/services/api_service.dart';
 import 'package:lego_rental_frontend/core/widgets/app_background.dart';
+import 'package:lego_rental_frontend/core/widgets/app_primary_button.dart';
 import 'package:lego_rental_frontend/features/home/home_screen.dart';
 import 'package:lego_rental_frontend/features/main/main_screen.dart';
 import 'package:lego_rental_frontend/features/rentals/rental_screen.dart';
 import 'package:lego_rental_frontend/features/set_detail/set_detail_providers.dart';
 import 'package:lego_rental_frontend/core/models/lego_set_model.dart';
 
+
 class SetDetailScreen extends ConsumerStatefulWidget {
   final int setId;
   const SetDetailScreen({super.key, required this.setId});
+
 
   @override
   ConsumerState<SetDetailScreen> createState() => _SetDetailScreenState();
 }
 
+
 class _SetDetailScreenState extends ConsumerState<SetDetailScreen> {
   int? _setIdLoaded;
+
 
   @override
   void initState() {
@@ -28,9 +33,11 @@ class _SetDetailScreenState extends ConsumerState<SetDetailScreen> {
     );
   }
 
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(setDetailProvider);
+
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5CB58),
@@ -90,11 +97,14 @@ class _SetDetailScreenState extends ConsumerState<SetDetailScreen> {
   }
 }
 
+
 // ─── SetDetailContent ────────────────────────────────────────────────────────
+
 
 class SetDetailContent extends StatefulWidget {
   final LegoSetModel set;
   final List<AvailabilityModel> availabilities;
+
 
   const SetDetailContent({
     super.key,
@@ -102,18 +112,22 @@ class SetDetailContent extends StatefulWidget {
     required this.availabilities,
   });
 
+
   @override
   State<SetDetailContent> createState() => _SetDetailContentState();
 }
+
 
 class _SetDetailContentState extends State<SetDetailContent> {
   final bool _scanBeforeReturning = false;
   DateTime? _rentalStart;
   DateTime? _rentalEnd;
 
+
   @override
   Widget build(BuildContext context) {
     final s = widget.set;
+
 
     String _fakeRating(dynamic seed) {
       final base = seed.toString().codeUnits.fold(0, (sum, c) => sum + c);
@@ -121,12 +135,14 @@ class _SetDetailContentState extends State<SetDetailContent> {
       return value.toStringAsFixed(1);
     }
 
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 16),
+
 
 // ── Preview kártya: kép + fő adatok ──────────────────────────────
           Container(
@@ -240,6 +256,7 @@ class _SetDetailContentState extends State<SetDetailContent> {
           ),
           const SizedBox(height: 16),
 
+
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(12),
@@ -322,6 +339,7 @@ class _SetDetailContentState extends State<SetDetailContent> {
             ),
           ),
 
+
           if (s.averageRating != null || s.reviewCount != null) ...[
             Container(
               width: double.infinity,
@@ -370,6 +388,7 @@ class _SetDetailContentState extends State<SetDetailContent> {
           ],
           const SizedBox(height: 8),
 
+
           //--Elérhetőség-----------------------------------------------------
           const Text(
             'Available periods',
@@ -380,6 +399,7 @@ class _SetDetailContentState extends State<SetDetailContent> {
             ),
           ),
           const SizedBox(height: 8),
+
 
           widget.availabilities.isEmpty
               ? Container(
@@ -434,6 +454,7 @@ class _SetDetailContentState extends State<SetDetailContent> {
                 ),
           const SizedBox(height: 16),
 
+
           AvailabilityCalendar(
             onRangeSelected: (start, end) {
               setState(() {
@@ -443,53 +464,41 @@ class _SetDetailContentState extends State<SetDetailContent> {
             },
           ),
           // ── Bérlés gomb ──────────────────────────────────────────────────
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFD3D3D3),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(13),
-                ),
-              ),
-              onPressed: () {
-                if (_rentalStart == null || _rentalEnd == null) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                        'Kérlek válassz bérlési időszakot a naptárban!',
-                      ),
-                    ),
-                  );
-                  return;
-                }
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => RentalScreen(
-                      set: widget.set,
-                      startDate: _rentalStart!,
-                      endDate: _rentalEnd!,
-                    ),
-                  ),
-                );
-              },
-              child: const Text(
-                'Rent',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w500,
-                  color: Color(0xFF391713),
-                ),
-              ),
+SizedBox(
+  width: double.infinity,
+  child: AppPrimaryButton(
+    label: 'Rent',
+    onPressed: () {
+      if (_rentalStart == null || _rentalEnd == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Kérlek válassz bérlési időszakot a naptárban!',
             ),
           ),
+        );
+        return;
+      }
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => RentalScreen(
+            set: widget.set,
+            startDate: _rentalStart!,
+            endDate: _rentalEnd!,
+          ),
+        ),
+      );
+    },
+  ),
+),
           const SizedBox(height: 16),
         ],
       ),
     );
   }
+
 
   Widget _infoTile(String label, String value) {
     return Container(
@@ -524,6 +533,7 @@ class _SetDetailContentState extends State<SetDetailContent> {
     );
   }
 
+
   Widget _imagePlaceholder() {
     return Container(
       height: 200,
@@ -538,12 +548,15 @@ class _SetDetailContentState extends State<SetDetailContent> {
   }
 }
 
+
 // ─── DetailDropdown ──────────────────────────────────────────────────────────
+
 
 class DetailDropdown extends StatelessWidget {
   final String label;
   final String? value;
   final ValueChanged<String?> onChanged;
+
 
   const DetailDropdown({
     super.key,
@@ -551,6 +564,7 @@ class DetailDropdown extends StatelessWidget {
     required this.value,
     required this.onChanged,
   });
+
 
   @override
   Widget build(BuildContext context) {
@@ -577,21 +591,26 @@ class DetailDropdown extends StatelessWidget {
   }
 }
 
+
 // ─── AvailabilityCalendar ────────────────────────────────────────────────────
+
 
 class AvailabilityCalendar extends StatefulWidget {
   final void Function(DateTime? start, DateTime? end)? onRangeSelected;
   const AvailabilityCalendar({super.key, this.onRangeSelected});
 
+
   @override
   State<AvailabilityCalendar> createState() => _AvailabilityCalendarState();
 }
+
 
 class _AvailabilityCalendarState extends State<AvailabilityCalendar> {
   int currentYear = 2026;
   int currentMonth = DateTime.now().month;
   DateTime? startDate;
   DateTime? endDate;
+
 
   void _previousMonth() => setState(() {
         if (currentMonth == 1) {
@@ -602,6 +621,7 @@ class _AvailabilityCalendarState extends State<AvailabilityCalendar> {
         }
       });
 
+
   void _nextMonth() => setState(() {
         if (currentMonth == 12) {
           currentMonth = 1;
@@ -611,8 +631,10 @@ class _AvailabilityCalendarState extends State<AvailabilityCalendar> {
         }
       });
 
+
   void _previousYear() => setState(() => currentYear--);
   void _nextYear() => setState(() => currentYear++);
+
 
   void _selectDay(int day) {
     final selected = DateTime(currentYear, currentMonth, day);
@@ -630,6 +652,7 @@ class _AvailabilityCalendarState extends State<AvailabilityCalendar> {
     widget.onRangeSelected?.call(startDate, endDate);
   }
 
+
   bool _isDayInRange(int day) {
     if (startDate == null) return false;
     final d = DateTime(currentYear, currentMonth, day);
@@ -639,7 +662,9 @@ class _AvailabilityCalendarState extends State<AvailabilityCalendar> {
         (d.isAfter(startDate!) && d.isBefore(endDate!)));
   }
 
+
   int _daysInMonth(int year, int month) => DateTime(year, month + 1, 0).day;
+
 
   String _monthName(int month) {
     const months = [
@@ -659,6 +684,7 @@ class _AvailabilityCalendarState extends State<AvailabilityCalendar> {
     return months[month - 1];
   }
 
+
   @override
   Widget build(BuildContext context) {
     final daysInMonth = _daysInMonth(currentYear, currentMonth);
@@ -667,6 +693,7 @@ class _AvailabilityCalendarState extends State<AvailabilityCalendar> {
       currentMonth,
       1,
     ).weekday; // 1=hétfő
+
 
     return Container(
       padding: const EdgeInsets.all(12),
@@ -678,54 +705,33 @@ class _AvailabilityCalendarState extends State<AvailabilityCalendar> {
       child: Column(
         children: [
           // ── Év választó ──────────────────────────────────────────────
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              IconButton(
-                onPressed: _previousYear,
-                icon: const Icon(Icons.chevron_left, color: Color(0xFF391713)),
-              ),
-              Text(
-                '$currentYear',
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              IconButton(
-                onPressed: _nextYear,
-                icon: const Icon(Icons.chevron_right, color: Color(0xFF391713)),
-              ),
-            ],
-          ),
+    Row(
+  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  children: [
+    IconButton(
+      onPressed: _previousMonth,
+      icon: const Icon(Icons.chevron_left, color: Color(0xFF391713)),
+    ),
+    Expanded(
+      child: Text(
+        '${_monthName(currentMonth)} $currentYear',
+        textAlign: TextAlign.center,
+        style: const TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+          color: Color(0xFF391713),
+        ),
+      ),
+    ),
+    IconButton(
+      onPressed: _nextMonth,
+      icon: const Icon(Icons.chevron_right, color: Color(0xFF391713)),
+    ),
+  ],
+),
+const SizedBox(height: 8),      
           const SizedBox(height: 2),
 
-          // ── Hónap választó ───────────────────────────────────────────
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              IconButton(
-                onPressed: _previousMonth,
-                icon: const Icon(Icons.chevron_left, color: Color(0xFF391713)),
-              ),
-              SizedBox(
-                width: 120,
-                child: Text(
-                  _monthName(currentMonth),
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-              IconButton(
-                onPressed: _nextMonth,
-                icon: const Icon(Icons.chevron_right, color: Color(0xFF391713)),
-              ),
-            ],
-          ),
-          const SizedBox(height: 2),
 
           // ── Hétköznapok fejléc ───────────────────────────────────────
           GridView.count(
@@ -770,6 +776,7 @@ class _AvailabilityCalendarState extends State<AvailabilityCalendar> {
           ),
           const SizedBox(height: 2),
 
+
           // ── Napok rács ───────────────────────────────────────────────
           GridView.builder(
             shrinkWrap: true,
@@ -785,12 +792,14 @@ class _AvailabilityCalendarState extends State<AvailabilityCalendar> {
               // Üres cellák a hónap első napja előtt
               if (index < firstWeekday - 1) return const SizedBox();
 
+
               final day = index - firstWeekday + 2;
               final isInRange = _isDayInRange(day);
               final isStart = startDate != null &&
                   DateTime(currentYear, currentMonth, day) == startDate;
               final isEnd = endDate != null &&
                   DateTime(currentYear, currentMonth, day) == endDate;
+
 
               return GestureDetector(
                 onTap: () => _selectDay(day),
@@ -821,6 +830,7 @@ class _AvailabilityCalendarState extends State<AvailabilityCalendar> {
               );
             },
           ),
+
 
           // ── Kiválasztott időszak megjelenítése ───────────────────────
           if (startDate != null) ...[

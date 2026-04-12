@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:lego_rental_frontend/core/theme/app_colors.dart';
 import 'package:lego_rental_frontend/core/widgets/app_background.dart';
+import 'package:lego_rental_frontend/core/widgets/app_primary_button.dart';
+import 'package:lego_rental_frontend/core/widgets/app_text_field.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -17,6 +20,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final _mobileController = TextEditingController();
   final _locationController = TextEditingController();
 
+  bool _obscurePassword = true;
+
   @override
   void dispose() {
     _fullNameController.dispose();
@@ -29,15 +34,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   void _submit() {
     if (_formKey.currentState!.validate()) {
-      // TODO: itt majd backend hívás
-      Navigator.pop(context); // ideiglenesen vissza a loginre
+      Navigator.pop(context);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5CB58),
+      backgroundColor: AppColors.brandHeader,
       body: AppBackground(
         title: 'New Account',
         onBack: () => Navigator.pop(context),
@@ -51,14 +55,26 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 24),
 
-                    _SignUpField(
-                      label: 'Email*',
+                    Text(
+                      'Create your account',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            color: AppColors.text,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 20,
+                          ),
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    AppTextField(
+                      label: 'Email',
                       controller: _emailController,
+                      hintText: 'example@example.com',
                       keyboardType: TextInputType.emailAddress,
                       validator: (value) {
-                        if (value == null || value.isEmpty) {
+                        if (value == null || value.trim().isEmpty) {
                           return 'Please enter your email';
                         }
                         if (!value.contains('@')) {
@@ -69,10 +85,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     ),
                     const SizedBox(height: 16),
 
-                    _SignUpField(
-                      label: 'Password*',
+                    AppTextField(
+                      label: 'Password',
                       controller: _passwordController,
-                      obscureText: true,
+                      hintText: 'Enter your password',
+                      obscureText: _obscurePassword,
                       validator: (value) {
                         if (value == null || value.isEmpty) {
                           return 'Please enter a password';
@@ -82,12 +99,26 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         }
                         return null;
                       },
+                      suffixIcon: IconButton(
+                        onPressed: () {
+                          setState(() {
+                            _obscurePassword = !_obscurePassword;
+                          });
+                        },
+                        icon: Icon(
+                          _obscurePassword
+                              ? Icons.visibility_off_outlined
+                              : Icons.visibility_outlined,
+                          color: AppColors.textMuted,
+                        ),
+                      ),
                     ),
                     const SizedBox(height: 16),
 
-                    _SignUpField(
-                      label: 'Full name*',
+                    AppTextField(
+                      label: 'Full name',
                       controller: _fullNameController,
+                      hintText: 'Your full name',
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
                           return 'Please enter your name';
@@ -97,25 +128,27 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     ),
                     const SizedBox(height: 16),
 
-                    _SignUpField(
-                      label: 'Mobile Number',
+                    AppTextField(
+                      label: 'Mobile number',
                       controller: _mobileController,
+                      hintText: 'Optional',
                       keyboardType: TextInputType.phone,
                       validator: (value) {
-                        // opcionális mező: ha üres, az is oké
                         if (value == null || value.trim().isEmpty) {
                           return null;
                         }
-                        if (value.length < 7) {
+                        if (value.trim().length < 7) {
                           return 'Too short';
                         }
                         return null;
                       },
                     ),
+                    const SizedBox(height: 16),
 
-                    _SignUpField(
-                      label: 'Location (City)*',
+                    AppTextField(
+                      label: 'Location (City)',
                       controller: _locationController,
+                      hintText: 'e.g. Budapest',
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
                           return 'Please enter your city';
@@ -123,50 +156,41 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         return null;
                       },
                     ),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 24),
 
-                    // Sign Up button
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF848383),
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 12,
-                            horizontal: 24,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30),
-                          ),
-                        ),
-                        onPressed: _submit,
-                        child: const Text(
-                          'Sign Up',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
+                    AppPrimaryButton(
+                      label: 'Sign Up',
+                      onPressed: _submit,
                     ),
 
                     const SizedBox(height: 16),
+
                     Center(
                       child: TextButton(
                         onPressed: () {
-                          Navigator.pop(context); // vissza Loginre
+                          Navigator.pop(context);
                         },
-                        child: const Text(
-                          'Already have an account? Log in',
-                          style: TextStyle(
-                            color: Color(0xFF848383),
-                            fontSize: 14,
-                            fontWeight: FontWeight.w300,
+                        child: Text.rich(
+                          TextSpan(
+                            text: 'Already have an account? ',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: AppColors.text,
+                                ),
+                            children: [
+                              TextSpan(
+                                text: 'Log in',
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: AppColors.primary,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
                     ),
+
+                    const SizedBox(height: 8),
                   ],
                 ),
               ),
@@ -174,57 +198,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _SignUpField extends StatelessWidget {
-  final String label;
-  final TextEditingController controller;
-  final bool obscureText;
-  final TextInputType? keyboardType;
-  final String? Function(String?)? validator;
-
-  const _SignUpField({
-    required this.label,
-    required this.controller,
-    this.obscureText = false,
-    this.keyboardType,
-    this.validator,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            color: const Color(0xFF391713),
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        const SizedBox(height: 8),
-        TextFormField(
-          controller: controller,
-          obscureText: obscureText,
-          keyboardType: keyboardType,
-          validator: validator,
-          decoration: InputDecoration(
-            filled: true,
-            fillColor: const Color(0xFFF3E9B5),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(13),
-              borderSide: BorderSide.none,
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 12,
-            ),
-          ),
-        ),
-      ],
     );
   }
 }

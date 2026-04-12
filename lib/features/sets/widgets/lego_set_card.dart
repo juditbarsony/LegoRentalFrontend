@@ -1,6 +1,11 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:lego_rental_frontend/core/models/lego_set_model.dart';
 import 'package:lego_rental_frontend/core/services/api_service.dart';
+import 'package:lego_rental_frontend/core/theme/app_colors.dart';
+import 'package:lego_rental_frontend/core/theme/app_radius.dart';
+import 'package:lego_rental_frontend/core/theme/app_spacing.dart';
+import 'package:lego_rental_frontend/core/theme/app_text_styles.dart';
 
 class LegoSetCard extends StatelessWidget {
   final LegoSetModel set;
@@ -18,85 +23,111 @@ class LegoSetCard extends StatelessWidget {
         ? '${ApiService.baseUrl}/proxy/image?url=${Uri.encodeComponent(set.imgUrl!)}'
         : null;
 
-    debugPrint('CARD IMG URL: ${set.imgUrl}');
-    debugPrint('FULL URL: $imageUrl');
+    if (kDebugMode) {
+      debugPrint('CARD IMG URL: ${set.imgUrl}');
+      debugPrint('FULL URL: $imageUrl');
+    }
 
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 8),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: const Color.fromARGB(255, 235, 235, 235),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Row(
-          children: [
-            // ── Kép ──────────────────────────────────────────────
-            ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: SizedBox(
-                width: 100,
-                height: 100,
-                child: imageUrl != null
-                    ? Image.network(
-                        imageUrl,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => const Icon(
-                          Icons.extension,
-                          size: 36,
-                          color: Color(0xFF391713),
-                        ),
-                        loadingBuilder: (context, child, loadingProgress) {
-                          if (loadingProgress == null) return child;
-                          return const Center(
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          );
-                        },
-                      )
-                    : const Icon(
-                        Icons.extension,
-                        size: 36,
-                        color: Color(0xFF391713),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        child: Ink(
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  child: SizedBox(
+                    width: 108,
+                    height: 108,
+                    child: imageUrl != null
+                        ? Image.network(
+                            imageUrl,
+                            fit: BoxFit.cover,
+                            loadingBuilder: (context, child, progress) {
+                              if (progress == null) return child;
+                              return const Center(
+                                child: CircularProgressIndicator(
+                                  color: AppColors.text,
+                                  strokeWidth: 2,
+                                ),
+                              );
+                            },
+                            errorBuilder: (_, __, ___) => _buildPlaceholder(),
+                          )
+                        : _buildPlaceholder(),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        set.title,
+                        style: AppTextStyles.cardTitle.copyWith(height: 1.2),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
-              ),
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        '#${set.setNum}',
+                        style: AppTextStyles.meta.copyWith(
+                          fontWeight: FontWeight.w500,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        set.location,
+                        style: AppTextStyles.body.copyWith(
+                          fontSize: 13,
+                          color: AppColors.text,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(width: 12),
+          ),
+        ),
+      ),
+    );
+  }
 
-            // ── Szövegek ──────────────────────────────────────────
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    set.title,
-                    style: const TextStyle(
-                        color: Color(0xFF391713),
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    set.location,
-                    style: const TextStyle(
-                        color: Color(0xFF252525), fontSize: 14),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Set: ${set.setNum}',
-                    style: const TextStyle(
-                        color: Color(0xFF391713),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Rating: 4.8',
-                    style: TextStyle(
-                        color: Color(0xFF848383), fontSize: 12),
-                  ),
-                ],
+  Widget _buildPlaceholder() {
+    return Container(
+      color: const Color(0xFFE8D5A3),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.extension,
+              size: 32,
+              color: AppColors.text,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              set.setNum ?? '',
+              style: AppTextStyles.meta.copyWith(
+                color: AppColors.text,
+                fontWeight: FontWeight.w600,
               ),
+              textAlign: TextAlign.center,
             ),
           ],
         ),

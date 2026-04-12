@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lego_rental_frontend/core/models/review_model.dart';
 import 'package:lego_rental_frontend/core/models/user_model.dart';
 import 'package:lego_rental_frontend/core/services/users_service.dart';
+import 'package:lego_rental_frontend/core/theme/app_colors.dart';
 import 'package:lego_rental_frontend/core/widgets/app_background.dart';
+import 'package:lego_rental_frontend/core/widgets/app_dropdown.dart';
+import 'package:lego_rental_frontend/core/widgets/app_primary_button.dart';
+import 'package:lego_rental_frontend/core/widgets/app_text_field.dart';
+import 'package:lego_rental_frontend/features/auth/auth_providers.dart';
 import 'package:lego_rental_frontend/features/friends/friends_service.dart';
 import 'package:lego_rental_frontend/features/home/home_screen.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lego_rental_frontend/features/auth/auth_providers.dart';
 import 'package:lego_rental_frontend/features/reviews/data/review_provider.dart';
-import 'package:lego_rental_frontend/core/models/review_model.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -19,16 +23,16 @@ class ProfileScreen extends ConsumerStatefulWidget {
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   bool _obscurePassword = true;
   late FriendsService friendsService;
+  late UsersService usersService;
 
   List<UserModel> friends = [];
+  List<UserModel> availableUsers = [];
+
   bool isLoadingFriends = true;
+  bool isLoadingUsers = true;
   bool isActionLoading = false;
   String? errorMessage;
   int? selectedUserId;
-
-  late UsersService usersService;
-  List<UserModel> availableUsers = [];
-  bool isLoadingUsers = true;
 
   @override
   void initState() {
@@ -42,10 +46,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       if (token != null) {
         friendsService = FriendsService(token: token);
         usersService = UsersService(token: token);
+
         await Future.wait([
           loadFriends(),
           loadAvailableUsers(),
         ]);
+
+        if (!mounted) return;
       }
 
       if (userId != null) {
@@ -55,6 +62,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   Future<void> loadFriends() async {
+    final result = await friendsService!.getFriends();
+    if (!mounted) return;
     setState(() {
       isLoadingFriends = true;
       errorMessage = null;
@@ -164,17 +173,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         : reviews.map((r) => r.rating).reduce((a, b) => a + b) / reviews.length;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5CB58),
+      backgroundColor: AppColors.brandHeader,
       body: AppBackground(
         title: 'My Profile',
-        onBack: () {
-          Navigator.pop(context);
-        },
+        onBack: () => Navigator.pop(context),
         onHome: () {
           Navigator.pushAndRemoveUntil(
             context,
             MaterialPageRoute(builder: (_) => const HomeScreen()),
-            (route) => false, // mindent kidob a stackből, tiszta Home
+            (route) => false,
           );
         },
         child: SingleChildScrollView(
@@ -182,8 +189,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           child: Column(
             children: [
               const SizedBox(height: 24),
-
-              // Profilkép
               Stack(
                 children: [
                   const CircleAvatar(
@@ -197,7 +202,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     child: Container(
                       padding: const EdgeInsets.all(8),
                       decoration: const BoxDecoration(
-                        color: Color(0xFF848383),
+                        color: AppColors.primary,
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(
@@ -209,19 +214,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   ),
                 ],
               ),
-
-              const SizedBox(height: 32),
-
-              // Full name
+              const SizedBox(height: 28),
               _ProfileField(
                 label: 'Full name',
                 value: 'Bársony Judit',
                 readOnly: true,
               ),
-
-              const SizedBox(height: 14),
-
-              // Password
+              const SizedBox(height: 16),
               _ProfileField(
                 label: 'Password',
                 value: '**************',
@@ -233,167 +232,115 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     });
                   },
                   icon: Icon(
-                    _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                    color: const Color(0xFF848383),
+                    _obscurePassword
+                        ? Icons.visibility_off_outlined
+                        : Icons.visibility_outlined,
+                    color: AppColors.textMuted,
                   ),
                 ),
               ),
-
-              const SizedBox(height: 14),
-              // Email
-              _ProfileField(label: 'Email', value: 'test@lego.com'),
-
-              const SizedBox(height: 14),
-
-              // Mobile Number
-              _ProfileField(label: 'Mobile Number', value: '+ 123 456 789'),
-
-              const SizedBox(height: 14),
-
-              // Location (City)
-              _ProfileField(label: 'Location (City)', value: 'Budapest'),
-
-              const SizedBox(height: 14),
-
-              // Update Profile gomb
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF848383),
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 12,
-                    horizontal: 48,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30),
-                  ),
-                ),
+              const SizedBox(height: 16),
+              _ProfileField(
+                label: 'Email',
+                value: 'test@lego.com',
+                readOnly: true,
+              ),
+              const SizedBox(height: 16),
+              _ProfileField(
+                label: 'Mobile number',
+                value: '+ 123 456 789',
+              ),
+              const SizedBox(height: 16),
+              _ProfileField(
+                label: 'Location (City)',
+                value: 'Budapest',
+              ),
+              const SizedBox(height: 24),
+              AppPrimaryButton(
+                label: 'Update Profile',
                 onPressed: () {
                   // TODO: update profile logic
                 },
-                child: const Text(
-                  'Update Profile',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.white,
-                  ),
-                ),
               ),
-
-              const SizedBox(height: 16),
-              // --- FRIENDS BLOKK KEZDETE ---
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: Colors.grey[300]!),
-                ),
+              const SizedBox(height: 20),
+              _SectionCard(
+                title: 'Friends',
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const SizedBox(height: 24),
-                    const Align(
-                      alignment: Alignment.centerLeft,
-                      child: const Text(
-                        'Friends',
-                        style: TextStyle(
-                          color: Color(0xFF391713),
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                   // const SizedBox(height: 12),
-
                     if (isLoadingUsers)
-                      const CircularProgressIndicator()
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 8),
+                        child: CircularProgressIndicator(),
+                      )
                     else if (availableUsers.isEmpty)
-                      const Text('Nincs más elérhető felhasználó.')
+                      Text(
+                        'No available users found.',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: AppColors.textMuted,
+                            ),
+                      )
                     else
-                      DropdownButtonFormField<int>(
+                      AppDropdown<int>(
+                        label: 'Select user',
+                        hintText: 'Choose a user',
                         value: selectedUserId,
-                        decoration: InputDecoration(
-                          labelText: 'Select user',
-                          labelStyle: const TextStyle(
-                            color: Color(0xFF848383),
-                            fontSize: 14,
-                          ),
-                          filled: true,
-                          fillColor: const Color(0xFFFFF2BE),
-                          contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 12),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
-                            borderSide: BorderSide.none,
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
-                            borderSide: const BorderSide(
-                                color: Color(0xFFB89B44), width: 1),
-                          ),
-                        ),
-                        borderRadius: BorderRadius.circular(14),
-                        icon: const Icon(Icons.keyboard_arrow_down_rounded),
-                        dropdownColor: Colors.white,
+                        enabled: !isActionLoading,
                         items: availableUsers.map((user) {
                           return DropdownMenuItem<int>(
                             value: user.id,
-                            child: Text(user.fullName),
+                            child: Text(
+                              user.fullName,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w400,
+                                color: AppColors.text,
+                              ),
+                            ),
                           );
                         }).toList(),
-                        onChanged: isActionLoading
-                            ? null
-                            : (value) {
-                                setState(() {
-                                  selectedUserId = value;
-                                });
-                              },
+                        onChanged: (value) {
+                          setState(() {
+                            selectedUserId = value;
+                          });
+                        },
                       ),
-
                     const SizedBox(height: 12),
-
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: (selectedUserId == null || isActionLoading)
-                            ? null
-                            : addSelectedFriend,
-                        child: isActionLoading
-                            ? const SizedBox(
-                                height: 18,
-                                width: 18,
-                                child:
-                                    CircularProgressIndicator(strokeWidth: 2),
-                              )
-                            : const Text('Add friend'),
-                      ),
+                    AppPrimaryButton(
+                      label: isActionLoading ? 'Adding...' : 'Add friend',
+                      onPressed: (selectedUserId == null || isActionLoading)
+                          ? null
+                          : addSelectedFriend,
                     ),
-
-                    const SizedBox(height: 12),
-
-                    if (errorMessage != null)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: Text(
-                          errorMessage!,
-                          style: const TextStyle(color: Colors.red),
-                        ),
+                    if (errorMessage != null) ...[
+                      const SizedBox(height: 10),
+                      Text(
+                        errorMessage!,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Colors.red,
+                            ),
                       ),
-
+                    ],
+                    const SizedBox(height: 12),
                     if (isLoadingFriends)
-                      const CircularProgressIndicator()
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 8),
+                        child: CircularProgressIndicator(),
+                      )
                     else if (friends.isEmpty)
-                      const Align(
-                        alignment: Alignment.centerLeft,
-                        child: Text('No friends yet.'),
+                      Text(
+                        'No friends yet.',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: AppColors.textMuted,
+                            ),
                       )
                     else
-                      ListView.builder(
+                      ListView.separated(
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
                         itemCount: friends.length,
+                        separatorBuilder: (_, __) => const Divider(height: 16),
                         itemBuilder: (context, index) {
                           final friend = friends[index];
                           return ListTile(
@@ -406,18 +353,22 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             ),
                             title: Text(
                               friend.fullName,
-                              style: const TextStyle(
-                                color: Color(0xFF252525),
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                              ),
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.copyWith(
+                                    color: AppColors.text,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                             ),
                             subtitle: Text(
                               friend.email,
-                              style: const TextStyle(
-                                color: Color(0xFF848383),
-                                fontSize: 12,
-                              ),
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(
+                                    color: AppColors.textMuted,
+                                  ),
                             ),
                             trailing: IconButton(
                               icon: const Icon(Icons.close, size: 20),
@@ -428,35 +379,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           );
                         },
                       ),
-
-                    // --- FRIENDS BLOKK VÉGE ---
-
-                    const SizedBox(height: 6),
                   ],
                 ),
               ),
-              const SizedBox(height: 32),
-
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: Colors.grey[300]!),
-                ),
+              const SizedBox(height: 20),
+              _SectionCard(
+                title: 'Received reviews',
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Received reviews',
-                      style: TextStyle(
-                        color: Color(0xFF391713),
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
                     if (reviewState.isLoading)
                       const Center(
                         child: Padding(
@@ -467,18 +398,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     else if (reviewState.errorMessage != null)
                       Text(
                         reviewState.errorMessage!,
-                        style: const TextStyle(
-                          color: Colors.red,
-                          fontSize: 13,
-                        ),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Colors.red,
+                            ),
                       )
                     else if (reviews.isEmpty)
-                      const Text(
+                      Text(
                         'No reviews yet.',
-                        style: TextStyle(
-                          color: Color(0xFF848383),
-                          fontSize: 13,
-                        ),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: AppColors.textMuted,
+                            ),
                       )
                     else ...[
                       Row(
@@ -487,19 +416,21 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           const SizedBox(width: 8),
                           Text(
                             '${averageRating.toStringAsFixed(1)} / 5',
-                            style: const TextStyle(
-                              color: Color(0xFF252525),
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                            ),
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.copyWith(
+                                  color: AppColors.text,
+                                  fontWeight: FontWeight.w600,
+                                ),
                           ),
                           const SizedBox(width: 8),
                           Text(
                             '(${reviews.length} reviews)',
-                            style: const TextStyle(
-                              color: Color(0xFF848383),
-                              fontSize: 13,
-                            ),
+                            style:
+                                Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: AppColors.textMuted,
+                                    ),
                           ),
                         ],
                       ),
@@ -534,64 +465,49 @@ class _ProfileField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            color: Color(0xFF391713),
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
-            height: 1.2,
+    return AppTextField(
+      label: label,
+      hintText: value,
+      obscureText: obscureText,
+      readOnly: readOnly,
+      suffixIcon: suffixIcon,
+    );
+  }
+}
+
+class _SectionCard extends StatelessWidget {
+  final String title;
+  final Widget child;
+
+  const _SectionCard({
+    required this.title,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: AppColors.text,
+                  fontWeight: FontWeight.w600,
+                ),
           ),
-        ),
-        const SizedBox(height: 6),
-        TextField(
-          readOnly: readOnly,
-          obscureText: obscureText,
-          style: const TextStyle(
-            color: Color(0xFF848383),
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-          ),
-          decoration: InputDecoration(
-            isDense: true,
-            filled: true,
-            fillColor: const Color(0xFFFFF2BE),
-            hintText: value,
-            hintStyle: const TextStyle(
-              color: Color(0xFF848383),
-              fontSize: 14,
-             // fontWeight: FontWeight.w500,
-            ),
-            suffixIcon: suffixIcon,
-            suffixIconConstraints: const BoxConstraints(
-              minWidth: 40,
-              minHeight: 40,
-            ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide.none,
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide.none,
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: const BorderSide(
-                color: Color(0xFFD8BE67),
-                width: 1,
-              ),
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 11,
-            ),
-          ),
-        ),
-      ],
+          const SizedBox(height: 14),
+          child,
+        ],
+      ),
     );
   }
 }
@@ -620,9 +536,9 @@ class _ReviewCard extends StatelessWidget {
       margin: const EdgeInsets.only(top: 10),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFFF9F9F9),
+        color: AppColors.background,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[300]!),
+        border: Border.all(color: AppColors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -632,11 +548,10 @@ class _ReviewCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   'Review #${review.id}',
-                  style: const TextStyle(
-                    color: Color(0xFF391713),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: AppColors.text,
+                        fontWeight: FontWeight.w600,
+                      ),
                 ),
               ),
               _buildStars(review.rating),
@@ -646,20 +561,18 @@ class _ReviewCard extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               review.comment!,
-              style: const TextStyle(
-                color: Color(0xFF252525),
-                fontSize: 13,
-                height: 1.3,
-              ),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AppColors.text,
+                    height: 1.3,
+                  ),
             ),
           ],
           const SizedBox(height: 8),
           Text(
             review.createdAt,
-            style: const TextStyle(
-              color: Color(0xFF848383),
-              fontSize: 12,
-            ),
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: AppColors.textMuted,
+                ),
           ),
         ],
       ),

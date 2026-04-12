@@ -1,6 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lego_rental_frontend/core/theme/app_colors.dart';
+import 'package:lego_rental_frontend/core/theme/app_radius.dart';
+import 'package:lego_rental_frontend/core/theme/app_spacing.dart';
+import 'package:lego_rental_frontend/core/theme/app_text_styles.dart';
 import 'package:lego_rental_frontend/core/widgets/app_background.dart';
+import 'package:lego_rental_frontend/core/widgets/app_dropdown.dart';
+import 'package:lego_rental_frontend/core/widgets/app_primary_button.dart';
+import 'package:lego_rental_frontend/core/widgets/app_section_card.dart';
+import 'package:lego_rental_frontend/core/widgets/section_header.dart';
 import 'package:lego_rental_frontend/features/home/home_screen.dart';
 import 'package:lego_rental_frontend/features/set_detail/set_detail_screen.dart';
 import 'package:lego_rental_frontend/features/sets/sets/sets_providers.dart';
@@ -14,27 +22,96 @@ class SearchScreen extends ConsumerStatefulWidget {
 }
 
 class _SearchScreenState extends ConsumerState<SearchScreen> {
-  String? selectedCategory;
   String? selectedStatus;
-  final double _maxPrice = 5000;
-  RangeValues _priceRange = const RangeValues(0, 5000);
   String? selectedLocation;
+
+  RangeValues _priceRange = const RangeValues(0, 5000);
+  DateTime? _rentalStart;
+  DateTime? _rentalEnd;
+
+  Key _calendarKey = UniqueKey();
 
   final _searchController = TextEditingController();
 
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
+  final _searchFocusNode = FocusNode();
+
+  static const _statusItems = ['NEW', 'USED', 'TRASH'];
+  static const _locationItems = [
+    'Budapest',
+    'Debrecen',
+    'Miskolc',
+    'Pécs',
+    'Győr',
+  ];
 
   @override
   void initState() {
     super.initState();
-    // első betöltés: keyword nélkül
     Future.microtask(() {
       ref.read(setsProvider.notifier).loadSets();
     });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _searchFocusNode.dispose();
+    super.dispose();
+  }
+
+  List<String> _buildSetNumberSuggestions(List<dynamic> items, String query) {
+    final normalized = query.trim().toLowerCase();
+    if (normalized.isEmpty) return const [];
+
+    final matches = items
+        .map((item) => item.setNum?.toString() ?? '')
+        .where((setNum) => setNum.isNotEmpty)
+        .where((setNum) => setNum.toLowerCase().contains(normalized))
+        .toSet()
+        .toList()
+      ..sort();
+
+    return matches.take(8).toList();
+  }
+
+  String _priceLabel() {
+    final start = _priceRange.start.toInt();
+    final end = _priceRange.end.toInt();
+
+    if (start <= 0 && end >= 5000) {
+      return 'Any price';
+    }
+    if (end >= 5000) {
+      return '$start - 5000+ Ft';
+    }
+    return '$start - $end Ft';
+  }
+
+  void _applyFilters() {
+    final keyword = _searchController.text.trim();
+
+    ref.read(setsProvider.notifier).loadSets(
+          keyword: keyword.isEmpty ? null : keyword,
+          setStatus: selectedStatus,
+          location: selectedLocation,
+          maxPrice: _priceRange.end >= 5000 ? null : _priceRange.end,
+          // availableFrom: _rentalStart,
+          // availableTo: _rentalEnd,
+        );
+  }
+
+  void _resetFilters() {
+    setState(() {
+      _searchController.clear();
+      selectedStatus = null;
+      selectedLocation = null;
+      _priceRange = const RangeValues(0, 5000);
+      _rentalStart = null;
+      _rentalEnd = null;
+      _calendarKey = UniqueKey();
+    });
+
+    ref.read(setsProvider.notifier).loadSets();
   }
 
   @override
@@ -42,9 +119,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     final setsState = ref.watch(setsProvider);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5CB58),
+      backgroundColor: AppColors.brandHeader,
       body: AppBackground(
-        title: 'Search & Filter',
+        title: 'Advanced Search',
         onBack: null,
         onHome: () {
           Navigator.pushAndRemoveUntil(
@@ -54,210 +131,198 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           );
         },
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(AppSpacing.lg),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 16),
-
-              // Search mező
-              TextField(
-                controller: _searchController,
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: const Color(0xFFF3E9B5),
-                  hintText: 'Search',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(13),
-                    borderSide: BorderSide.none,
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  suffixIcon: IconButton(
-                    icon: const Icon(Icons.search),
-                    onPressed: () {
-                      final keyword = _searchController.text;
-                      ref
-                          .read(setsProvider.notifier)
-                          .loadSets(keyword: keyword);
-                    },
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 24),
-
-              // Filter cím
-              const Text(
-                'Filter:',
-                style: TextStyle(
-                  color: Color(0xFF391713),
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-
-              const SizedBox(height: 12),
-
-              // Category dropdown
-              FilterDropdown(
-                label: 'Category',
-                value: selectedCategory,
-                items: const [
-                  'City',
-                  'Technic',
-                  'Star Wars',
-                  'Basic',
-                  'Creator',
-                  'Other',
-                ],
-                onChanged: (value) {
-                  setState(() {
-                    selectedCategory = value;
-                  });
-                },
-              ),
-
-              const SizedBox(height: 12),
-
-              // Status dropdown
-              FilterDropdown(
-                label: 'Status',
-                value: selectedStatus,
-                items: const ['NEW', 'USED', 'TRASH'],
-                onChanged: (value) => setState(() => selectedStatus = value),
-              ),
-
-              const SizedBox(height: 12),
-
-              // Price csúszka
-              const Text(
-                'Price per day',
-                style: TextStyle(
-                  color: Color(0xFF391713),
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    '${_priceRange.start.toInt()} Ft',
-                    style: const TextStyle(fontSize: 12),
-                  ),
-                  Text(
-                    _priceRange.end >= 5000
-                        ? '5000 Ft >'
-                        : '${_priceRange.end.toInt()} Ft',
-                    style: const TextStyle(fontSize: 12),
-                  ),
-                ],
-              ),
-              RangeSlider(
-                values: _priceRange,
-                min: 0,
-                max: 5000,
-                divisions: 20,
-                activeColor: const Color(0xFF391713),
-                inactiveColor: Colors.grey[300],
-                onChanged: (values) => setState(() => _priceRange = values),
-              ),
-
-              const SizedBox(height: 12),
-
-              // Location dropdown
-              FilterDropdown(
-                label: 'Location',
-                value: selectedLocation,
-                items: const [
-                  'Budapest',
-                  'Debrecen',
-                  'Miskolc',
-                  'Pécs',
-                  'Győr',
-                ],
-                onChanged: (value) => setState(() => selectedLocation = value),
-              ),
-
-              const SizedBox(height: 24),
-
-              // Apply gomb
-              Center(
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFD3D3D3),
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 12,
-                      horizontal: 48,
+              const SizedBox(height: AppSpacing.lg),
+              _buildSearchField(setsState.items),
+              const SizedBox(height: AppSpacing.xl),
+              SectionHeader(
+                title: 'Filters',
+                trailing: Align(
+                  alignment: Alignment.topRight,
+                  child: TextButton(
+                    onPressed: _resetFilters,
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.zero,
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      visualDensity: VisualDensity.compact,
                     ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(13),
-                    ),
-                  ),
-                  onPressed: () {
-                    final keyword = _searchController.text.trim();
-                    ref
-                        .read(setsProvider.notifier)
-                        .loadSets(
-                          keyword: keyword.isEmpty ? null : keyword,
-                          setStatus: selectedStatus,
-                          location: selectedLocation,
-                          maxPrice: _priceRange.end >= 5000
-                              ? null
-                              : _priceRange.end,
-                        );
-                  },
-                  child: const Text(
-                    'Apply',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Color(0xFF391713),
-                    ),
+                    child: const Text('Reset'),
                   ),
                 ),
               ),
-
-              const SizedBox(height: 32),
-
-              // Placeholder a térképnek és listának
               Container(
-                height: 150,
+                width: double.infinity,
+                padding: const EdgeInsets.all(AppSpacing.lg),
                 decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(16),
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  border: Border.all(color: AppColors.border),
                 ),
-                child: const Center(
-                  child: Text('Nearby LEGO Renters map - következő lépés'),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    AppDropdown<String>(
+                      hintText: 'Status',
+                      value: selectedStatus,
+                      items: _statusItems
+                          .map(
+                            (item) => DropdownMenuItem<String>(
+                              value: item,
+                              child: Text(item),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (value) =>
+                          setState(() => selectedStatus = value),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    AppDropdown<String>(
+                      hintText: 'Location',
+                      value: selectedLocation,
+                      items: _locationItems
+                          .map(
+                            (item) => DropdownMenuItem<String>(
+                              value: item,
+                              child: Text(item),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (value) =>
+                          setState(() => selectedLocation = value),
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        const Text(
+                          'Price per day',
+                          style: TextStyle(
+                            color: AppColors.text,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.warningSoft,
+                            borderRadius: BorderRadius.circular(AppRadius.pill),
+                            border: Border.all(color: AppColors.border),
+                          ),
+                          child: Text(
+                            _priceLabel(),
+                            style: AppTextStyles.meta.copyWith(
+                              color: AppColors.text,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    SliderTheme(
+                      data: SliderTheme.of(context).copyWith(
+                        trackHeight: 4,
+                        rangeThumbShape: const RoundRangeSliderThumbShape(
+                          enabledThumbRadius: 8,
+                        ),
+                        overlayShape: const RoundSliderOverlayShape(
+                          overlayRadius: 14,
+                        ),
+                        activeTrackColor: AppColors.text,
+                        inactiveTrackColor: AppColors.disabled,
+                        thumbColor: const Color(0xFFF4C542),
+                        overlayColor: const Color(0xFFF4C542).withOpacity(0.18),
+                      ),
+                      child: RangeSlider(
+                        values: _priceRange,
+                        min: 0,
+                        max: 5000,
+                        divisions: 20,
+                        onChanged: (values) =>
+                            setState(() => _priceRange = values),
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                    const Text(
+                      'Rental period',
+                      style: TextStyle(
+                        color: AppColors.text,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    AvailabilityCalendar(
+                      key: _calendarKey,
+                      onRangeSelected: (start, end) {
+                        setState(() {
+                          _rentalStart = start;
+                          _rentalEnd = end;
+                        });
+                      },
+                    ),
+                  ],
                 ),
               ),
-
-              const SizedBox(height: 24),
-
-              /* Container(
-                height: 300,
-                color: Colors.grey[300],
-                child: const Center(
-                  child: Text('Set kártyák listája - harmadik lépés'),
-                ),
-              ), */
-              // Set kártyák listája
+              const SizedBox(height: AppSpacing.lg),
+              Column(
+                children: [
+                  AppPrimaryButton(
+                    label: 'Apply',
+                    onPressed: _applyFilters,
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.xl),
+              const SectionHeader(title: 'Results'),
               if (setsState.isLoading)
-                const Center(child: CircularProgressIndicator())
+                const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(24),
+                    child: CircularProgressIndicator(
+                      color: AppColors.text,
+                    ),
+                  ),
+                )
               else if (setsState.error != null)
-                Center(
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(AppSpacing.lg),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(AppRadius.lg),
+                    border: Border.all(color: AppColors.border),
+                  ),
                   child: Text(
                     setsState.error!,
-                    style: const TextStyle(color: Colors.red),
+                    style: AppTextStyles.body.copyWith(
+                      color: Colors.red,
+                    ),
                   ),
                 )
               else if (setsState.items.isEmpty)
-                const Center(
-                  child: Text('Nincs a keresésnek megfelelő készlet.'),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(AppSpacing.lg),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(AppRadius.lg),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: const Text(
+                    'Nincs a keresésnek megfelelő készlet.',
+                    style: AppTextStyles.body,
+                  ),
                 )
               else
                 ListView.builder(
@@ -266,48 +331,55 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   itemCount: setsState.items.length,
                   itemBuilder: (context, index) {
                     final set = setsState.items[index];
-                    return LegoSetCard(
-                      set: set,
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => SetDetailScreen(setId: set.id),
-                          ),
-                        );
-                      },
+                    return Padding(
+                      padding: const EdgeInsets.only(
+                        bottom: AppSpacing.md,
+                      ),
+                      child: LegoSetCard(
+                        set: set,
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => SetDetailScreen(setId: set.id),
+                            ),
+                          );
+                        },
+                      ),
                     );
                   },
                 ),
-
-              const SizedBox(height: 24),
-
-              // Lapozás
+              const SizedBox(height: AppSpacing.xl),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   IconButton(
-                    onPressed: () {
-                      // TODO: előző oldal
-                    },
+                    onPressed: () {},
                     icon: const Icon(Icons.chevron_left),
-                    color: const Color(0xFF391713),
+                    color: AppColors.text,
                   ),
                   const Text(
                     '1',
-                    style: TextStyle(fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      color: AppColors.text,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(width: 12),
-                  const Text('2'),
+                  const Text(
+                    '2',
+                    style: TextStyle(color: AppColors.textMuted),
+                  ),
                   const SizedBox(width: 12),
-                  const Text('3'),
+                  const Text(
+                    '3',
+                    style: TextStyle(color: AppColors.textMuted),
+                  ),
                   const SizedBox(width: 12),
                   IconButton(
-                    onPressed: () {
-                      // TODO: következő oldal
-                    },
+                    onPressed: () {},
                     icon: const Icon(Icons.chevron_right),
-                    color: const Color(0xFF391713),
+                    color: AppColors.text,
                   ),
                 ],
               ),
@@ -317,60 +389,145 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       ),
     );
   }
-}
 
-class FilterDropdown extends StatelessWidget {
-  final String label;
-  final String? value;
-  final List<String> items;
-  final ValueChanged<String?> onChanged;
-
-  const FilterDropdown({
-    super.key,
-    required this.label,
-    required this.value,
-    required this.items,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(bottom: BorderSide(color: Colors.grey[400]!, width: 1)),
-      ),
-      child: DropdownButton<String>(
-        value: value,
-        hint: Text(
-          label,
-          style: const TextStyle(color: Color(0xFF391713), fontSize: 14),
-        ),
-        isExpanded: true,
-        underline: const SizedBox(),
-        icon: const Icon(Icons.arrow_drop_down, color: Color(0xFF391713)),
-        items: [
-          // "Összes" opció a szűrő törlésére
-          DropdownMenuItem<String>(
-            value: null,
-            child: Text(
-              label,
-              style: const TextStyle(color: Color(0xFF848383), fontSize: 14),
+  Widget _buildSearchField(List<dynamic> items) {
+    return RawAutocomplete<String>(
+      textEditingController: _searchController,
+      focusNode: _searchFocusNode,
+      optionsBuilder: (TextEditingValue textEditingValue) {
+        return _buildSetNumberSuggestions(items, textEditingValue.text);
+      },
+      onSelected: (String selection) {
+        _searchController.text = selection;
+        _searchController.selection = TextSelection.fromPosition(
+          TextPosition(offset: selection.length),
+        );
+        _applyFilters();
+      },
+      fieldViewBuilder: (
+        context,
+        textEditingController,
+        focusNode,
+        onFieldSubmitted,
+      ) {
+        return Container(
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            border: Border.all(
+              color: const Color(0xFFF0E6B8),
+              width: 1,
             ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.06),
+                blurRadius: 10,
+                offset: const Offset(0, 3),
+              ),
+            ],
           ),
-          ...items.map(
-            (item) => DropdownMenuItem<String>(
-              value: item,
-              child: Text(
-                item,
-                style: const TextStyle(color: Color(0xFF391713), fontSize: 14),
+          child: TextField(
+            controller: textEditingController,
+            focusNode: focusNode,
+            onSubmitted: (_) {
+              onFieldSubmitted();
+              _applyFilters();
+            },
+            onChanged: (_) => setState(() {}),
+            textInputAction: TextInputAction.search,
+            style: const TextStyle(
+              color: Color(0xFF252525),
+              fontSize: 15,
+              fontWeight: FontWeight.w500,
+            ),
+            decoration: InputDecoration(
+              filled: true,
+              fillColor: Colors.transparent,
+              hintText: 'Search by name or set number...',
+              hintStyle: AppTextStyles.body.copyWith(
+                color: AppColors.textMuted,
+              ),
+              prefixIcon: const Icon(
+                Icons.search,
+                color: Color(0xFF5C5C5C),
+                size: 22,
+              ),
+              suffixIcon: textEditingController.text.isNotEmpty
+                  ? IconButton(
+                      onPressed: () {
+                        textEditingController.clear();
+                        setState(() {});
+                      },
+                      icon: const Icon(
+                        Icons.clear,
+                        color: AppColors.textMuted,
+                        size: 20,
+                      ),
+                    )
+                  : null,
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 14,
               ),
             ),
           ),
-        ],
-        onChanged: onChanged,
-      ),
+        );
+      },
+      optionsViewBuilder: (context, onSelected, options) {
+        final optionList = options.toList();
+
+        if (optionList.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        return Align(
+          alignment: Alignment.topLeft,
+          child: Material(
+            color: Colors.transparent,
+            child: Container(
+              margin: const EdgeInsets.only(top: 8),
+              width: MediaQuery.of(context).size.width - 32,
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(AppRadius.md),
+                border: Border.all(color: const Color(0xFFF0E6B8)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.06),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: ListView.separated(
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                shrinkWrap: true,
+                itemCount: optionList.length,
+                separatorBuilder: (_, __) =>
+                    const Divider(height: 1, color: AppColors.border),
+                itemBuilder: (context, index) {
+                  final option = optionList[index];
+                  return ListTile(
+                    dense: true,
+                    title: Text(
+                      option,
+                      style: AppTextStyles.body.copyWith(
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    onTap: () => onSelected(option),
+                  );
+                },
+              ),
+            ),
+          ),
+        );
+      },
     );
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.year}.${date.month.toString().padLeft(2, '0')}.${date.day.toString().padLeft(2, '0')}';
   }
 }

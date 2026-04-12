@@ -19,14 +19,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   final TextEditingController _searchController = TextEditingController();
   int? _selectedThemeId;
 
-  static const List<Map<String, dynamic>> _categories = [
-    {'label': 'City', 'themeId': 672, 'color': Color(0xFFF7E7B4)},
-    {'label': 'Star Wars', 'themeId': 171, 'color': Color(0xFFF2D98A)},
-    {'label': 'Technic', 'themeId': 1, 'color': Color(0xFFEBCB63)},
-    {'label': 'Friends', 'themeId': 246, 'color': Color(0xFFE2BE58)},
-    {'label': 'Creator', 'themeId': 22, 'color': Color(0xFFD6AF4B)},
-    {'label': 'Harry Potter', 'themeId': 406, 'color': Color(0xFFC99D3E)},
-  ];
+
 
   @override
   void initState() {
@@ -50,15 +43,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     _loadSets(keyword: value.trim(), themeId: _selectedThemeId);
   }
 
-  void _onCategoryTap(int themeId) {
-    setState(() {
-      _selectedThemeId = _selectedThemeId == themeId ? null : themeId;
-    });
-    _loadSets(
-      keyword: _searchController.text.trim(),
-      themeId: _selectedThemeId,
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -78,7 +62,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               const SizedBox(height: 16),
 
               // Keresőmező
-// Keresőmező
               Row(
                 children: [
                   Expanded(
@@ -189,102 +172,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
               ),
               const SizedBox(height: 6),
-              const Text(
-                'Browse categories and available rentals',
-                style: TextStyle(
-                  color: Color(0xFF252525),
-                  fontSize: 14,
-                  fontWeight: FontWeight.w400,
-                ),
-              ),
+              
 
-              const SizedBox(height: 24),
-              const Text(
-                'Browse Categories',
-                style: TextStyle(
-                  color: Color(0xFF391713),
-                  fontSize: 20,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 12),
-
-              // Kategória csík
-              SizedBox(
-                height: 72,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: _categories.length,
-                  itemBuilder: (context, index) {
-                    final cat = _categories[index];
-                    final isSelected = _selectedThemeId == cat['themeId'];
-
-                    return GestureDetector(
-                      onTap: () => _onCategoryTap(cat['themeId'] as int),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 220),
-                        curve: Curves.easeOut,
-                        width: 104,
-                        margin: const EdgeInsets.only(right: 10),
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        decoration: BoxDecoration(
-                          color: isSelected
-                              ? const Color(0xFFE4C766)
-                              : const Color(0xFFF6EFCF),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: isSelected
-                                ? const Color(0xFF391713)
-                                : const Color(0xFFE7DCA8),
-                            width: isSelected ? 1.6 : 1,
-                          ),
-                          boxShadow: isSelected
-                              ? [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.10),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 3),
-                                  ),
-                                ]
-                              : null,
-                        ),
-                        child: Center(
-                          child: Text(
-                            cat['label'] as String,
-                            style: TextStyle(
-                              color: const Color(0xFF391713),
-                              fontSize: 13,
-                              fontWeight: isSelected
-                                  ? FontWeight.w700
-                                  : FontWeight.w600,
-                              height: 1.2,
-                            ),
-                            textAlign: TextAlign.center,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
               const SizedBox(height: 24),
 
               // Szekció cím
-              Text(
-                _selectedThemeId != null
-                    ? '${_categories.firstWhere((c) => c['themeId'] == _selectedThemeId)['label']} sets'
-                    : _searchController.text.trim().isEmpty
-                        ? 'Available sets'
-                        : 'Results for "${_searchController.text.trim()}"',
-                style: const TextStyle(
-                  color: Color(0xFF391713),
-                  fontSize: 20,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 12),
+              
 
               // Tartalom
               if (setsState.isLoading)

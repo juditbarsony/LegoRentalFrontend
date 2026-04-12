@@ -173,28 +173,38 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
                               ),
                             ),
                             if (isMissing)
-                              OutlinedButton(
-                                onPressed: () async {
-                                  await ref
-                                      .read(scanProvider.notifier)
-                                      .manualConfirm(itemId: item.id);
+                              SizedBox(
+                                height: 36,
+                                child: OutlinedButton(
+                                  onPressed: () async {
+                                    await ref
+                                        .read(scanProvider.notifier)
+                                        .manualConfirm(itemId: item.id);
 
-                                  if (!mounted) return;
+                                    if (!mounted) return;
 
-                                  Navigator.pop(context);
+                                    Navigator.pop(context);
 
-                                  ScaffoldMessenger.of(this.context)
-                                      .showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Item manually confirmed.'),
-                                    ),
-                                  );
-                                },
-                                style: OutlinedButton.styleFrom(
-                                  foregroundColor: const Color(0xFF391713),
-                                  side: BorderSide(color: Colors.grey[400]!),
+                                    ScaffoldMessenger.of(this.context)
+                                        .showSnackBar(
+                                      const SnackBar(
+                                        content:
+                                            Text('Item manually confirmed.'),
+                                      ),
+                                    );
+                                  },
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: const Color(0xFF391713),
+                                    side: BorderSide(color: Colors.grey[400]!),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 12),
+                                    minimumSize: Size.zero,
+                                    tapTargetSize:
+                                        MaterialTapTargetSize.shrinkWrap,
+                                    visualDensity: VisualDensity.compact,
+                                  ),
+                                  child: const Text('Confirm'),
                                 ),
-                                child: const Text('Confirm'),
                               ),
                           ],
                         ),
@@ -513,65 +523,79 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
                   ),
                 ],
                 if (session != null) ...[
-                  // ── Status bar ──────────────────────────────────────────
+                  // ── Status + Progress ───────────────────────────────────
+// ── Status + Progress ───────────────────────────────────
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: session.status == 'COMPLETE'
-                          ? Colors.green[50]
-                          : Colors.grey[200],
+                      color: Colors.white,
                       border: Border.all(
                         color: session.status == 'COMPLETE'
-                            ? Colors.green
-                            : Colors.grey[400]!,
+                            ? Colors.green.shade200
+                            : Colors.grey.shade400,
                       ),
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Row(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(
-                          session.status == 'COMPLETE'
-                              ? Icons.check_circle
-                              : Icons.pending,
-                          color: session.status == 'COMPLETE'
-                              ? Colors.green
-                              : Colors.grey[600],
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            '${session.status} | ${session.identifiedCount}/${session.totalCount} identified',
-                            style: TextStyle(
+                        Row(
+                          children: [
+                            Icon(
+                              session.status == 'COMPLETE'
+                                  ? Icons.check_circle
+                                  : Icons.pending,
+                              size: 18,
                               color: session.status == 'COMPLETE'
-                                  ? Colors.green[800]
-                                  : const Color(0xFF391713),
-                              fontWeight: FontWeight.w500,
+                                  ? Colors.green
+                                  : Colors.grey[600],
                             ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                session.status == 'COMPLETE'
+                                    ? 'Scan complete'
+                                    : 'Scanning in progress',
+                                style: TextStyle(
+                                  color: session.status == 'COMPLETE'
+                                      ? Colors.green[800]
+                                      : const Color(0xFF391713),
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(999),
+                            child: LinearProgressIndicator(
+                              value: session.totalCount > 0
+                                  ? session.identifiedCount / session.totalCount
+                                  : 0,
+                              minHeight: 12,
+                              backgroundColor: Colors.grey[300],
+                              color: Colors.green,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          '${session.identifiedCount}/${session.totalCount} | ${session.missingCount} missing',
+                          style: const TextStyle(
+                            color: Color(0xFF848383),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 12),
 
-                  // ── Progress ────────────────────────────────────────────
-                  LinearProgressIndicator(
-                    value: session.totalCount > 0
-                        ? session.identifiedCount / session.totalCount
-                        : 0,
-                    backgroundColor: Colors.grey[300],
-                    color: Colors.green,
-                    minHeight: 6,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${session.identifiedCount} / ${session.totalCount} | ${session.missingCount} missing',
-                    style: const TextStyle(
-                      color: Color(0xFF848383),
-                      fontSize: 12,
-                    ),
-                  ),
                   const SizedBox(height: 16),
 
                   // ── Scan button ─────────────────────────────────────────
@@ -593,7 +617,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
                         ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: session.status == 'COMPLETE'
-                              ? Colors.grey[300]
+                              ? Color(0xFFF5CB58)
                               : const Color(0xFFD3D3D3),
                           padding: const EdgeInsets.symmetric(vertical: 12),
                           shape: RoundedRectangleBorder(

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lego_rental_frontend/core/models/lego_set_model.dart';
 import 'package:lego_rental_frontend/core/widgets/app_background.dart';
+import 'package:lego_rental_frontend/core/widgets/app_primary_button.dart';
+import 'package:lego_rental_frontend/core/widgets/app_secondary_button.dart';
 import 'package:lego_rental_frontend/features/rentals/rental_providers.dart';
 
 class RentalScreen extends ConsumerWidget {
@@ -158,60 +160,22 @@ class RentalScreen extends ConsumerWidget {
                 ],
 
                 // ── Confirm gomb ────────────────────────────────────
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFFFC107),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(13),
-                      ),
-                    ),
-                    onPressed: state.isLoading
-                        ? null
-                        : () {
-                            ref
-                                .read(createRentalProvider.notifier)
-                                .createRental(
-                                  legoSetId: set.id,
-                                  startDate: startDate,
-                                  endDate: endDate,
-                                );
-                          },
-                    child: state.isLoading
-                        ? const CircularProgressIndicator(color: Colors.white)
-                        : const Text(
-                            'Confirm Rental',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.black,
-                            ),
-                          ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-
-                // ── Mégsem gomb ─────────────────────────────────────
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton(
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(13),
-                      ),
-                      side: const BorderSide(color: Color(0xFF391713)),
-                    ),
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text(
-                      'Cancel',
-                      style: TextStyle(fontSize: 16, color: Color(0xFF391713)),
-                    ),
-                  ),
+                AppPrimaryButton(
+                  label: 'Confirm Rental',
+                  isLoading: state.isLoading,
+                  onPressed: () {
+                    ref.read(createRentalProvider.notifier).createRental(
+                          legoSetId: set.id,
+                          startDate: startDate,
+                          endDate: endDate,
+                        );
+                  },
                 ),
                 const SizedBox(height: 16),
+                AppSecondaryButton(
+                  label: 'Cancel',
+                  onPressed: () => Navigator.pop(context),
+                ),
               ],
             ),
           ),

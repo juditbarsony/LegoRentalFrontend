@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:lego_rental_frontend/core/widgets/app_background.dart';
-import 'package:lego_rental_frontend/features/home/home_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lego_rental_frontend/core/theme/app_colors.dart';
+import 'package:lego_rental_frontend/core/widgets/app_background.dart';
+import 'package:lego_rental_frontend/core/widgets/app_primary_button.dart';
+import 'package:lego_rental_frontend/core/widgets/app_text_field.dart';
+import 'package:lego_rental_frontend/features/home/home_screen.dart';
 import 'auth_providers.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -12,8 +15,11 @@ class LoginScreen extends ConsumerStatefulWidget {
 }
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
+  final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+
+  bool _obscurePassword = true;
 
   @override
   void dispose() {
@@ -21,6 +27,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     _passwordController.dispose();
     super.dispose();
   }
+
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+
+    await ref.read(authProvider.notifier).login(email, password);
+  }
+
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
@@ -33,211 +49,198 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         );
       }
     });
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF5CB58),
+      backgroundColor: AppColors.brandHeader,
       body: AppBackground(
         title: 'Log In',
-        onBack: () {
-          // ha lesz előző oldal, ide jöhet: Navigator.pop(context);
-        },
+        onBack: null,
         child: Center(
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 400),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 32),
-                  /*  Text(
-                    'Log In',
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      color: const Color(0xFFF8F8F8),
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 24), */
-                  Text(
-                    'Welcome',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      color: const Color(0xFF391713),
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: const Color(0xFF252525),
-                      fontWeight: FontWeight.w300,
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-
-                  // Email
-                  Text(
-                    'Email',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: const Color(0xFF391713),
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  _LoginTextField(
-                    controller: _emailController,
-                    hintText: 'example@example.com',
-                    obscureText: false,
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Password + "forget password"
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Password',
-                        style: Theme.of(context).textTheme.titleMedium
-                            ?.copyWith(
-                              color: const Color(0xFF391713),
-                              fontWeight: FontWeight.w500,
-                            ),
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          // TODO: Forgot password screen
-                        },
-                        child: const Text(
-                          'forget password',
-                          style: TextStyle(
-                            color: Color(0xFF848383),
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  _LoginTextField(
-                    controller: _passwordController,
-                    hintText: '••••••••••••',
-                    obscureText: true,
-                  ),
-                  const SizedBox(height: 32),
-
-                  // Log in button
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF848383),
-                        padding: const EdgeInsets.symmetric(
-                          vertical: 12,
-                          horizontal: 24,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(30),
-                        ),
-                      ),
-                      onPressed: () async {
-                        final email = _emailController.text;
-                        final password = _passwordController.text;
-                        await ref
-                            .read(authProvider.notifier)
-                            .login(email, password);
-                        // navigáció a ref.listen kezeli
-                      },
-                      child: const Text(
-                        'Log In',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  if (authState.isLoading)
-                    const Center(child: CircularProgressIndicator())
-                  else if (authState.error != null)
-                    Text(
-                      authState.error!,
-                      style: const TextStyle(color: Colors.red),
-                    )
-                  else if (authState.userName != null)
-                    Text(
-                      'Sikeres login: ${authState.userName}',
-                      style: const TextStyle(color: Colors.green),
-                    ),
-
-                  // Sign up link
-                  Center(
-                    child: TextButton(
-                      onPressed: () {
-                        Navigator.pushNamed(context, '/signup');
-                      },
-                      child: const Text.rich(
-                        TextSpan(
-                          text: 'Don’t have an account? ',
-                          style: TextStyle(
-                            color: Color(0xFF391713),
-                            fontSize: 14,
-                            fontWeight: FontWeight.w300,
-                          ),
-                          children: [
-                            TextSpan(
-                              text: 'Sign Up',
-                              style: TextStyle(
-                                color: Color(0xFF848383),
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 24),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Welcome',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleMedium
+                                    ?.copyWith(
+                                      color: AppColors.text,
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 20,
+                                    ),
                               ),
-                            ),
-                          ],
+                              const SizedBox(height: 8),
+                              Text(
+                                'Sign in to discover LEGO sets,\nrent, build, and return - simple and organized.',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.copyWith(
+                                      color: AppColors.textMuted,
+                                      height: 1.35,
+                                    ),
+                              ),
+                            ],
+                          ),
                         ),
-                        textAlign: TextAlign.center,
+                        /* const SizedBox(width: 12),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: Image.asset(
+                            'assets/images/login_lego.png',
+                            height: 88,
+                            width: 88,
+                            fit: BoxFit.cover,
+                          ),
+                        ), */
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    const SizedBox(height: 24),
+                    AppTextField(
+                      controller: _emailController,
+                      label: 'Email',
+                      hintText: 'example@example.com',
+                      keyboardType: TextInputType.emailAddress,
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Please enter your email';
+                        }
+                        if (!value.contains('@')) {
+                          return 'Invalid email';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Password',
+                          style:
+                              Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    color: AppColors.text,
+
+                                  ),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            // TODO: Forgot password
+                          },
+                          child: Text(
+                            'Forgot password?',
+                            style:
+                                Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: AppColors.textMuted,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    AppTextField(
+                      controller: _passwordController,
+                      hintText: 'Enter your password',
+                      obscureText: _obscurePassword,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter your password';
+                        }
+                        if (value.length < 6) {
+                          return 'At least 6 characters';
+                        }
+                        return null;
+                      },
+                      suffixIcon: IconButton(
+                        onPressed: () {
+                          setState(() {
+                            _obscurePassword = !_obscurePassword;
+                          });
+                        },
+                        icon: Icon(
+                          _obscurePassword
+                              ? Icons.visibility_off_outlined
+                              : Icons.visibility_outlined,
+                          color: AppColors.textMuted,
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                ],
+                    const SizedBox(height: 24),
+                    AppPrimaryButton(
+                      label: authState.isLoading ? 'Logging in...' : 'Log In',
+                      onPressed: authState.isLoading ? null : _submit,
+                    ),
+                    const SizedBox(height: 16),
+                    if (authState.isLoading)
+                      const Center(
+                        child: Padding(
+                          padding: EdgeInsets.only(top: 8),
+                          child: CircularProgressIndicator(),
+                        ),
+                      )
+                    else if (authState.error != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text(
+                          authState.error!,
+                          style:
+                              Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: Colors.red,
+                                  ),
+                        ),
+                      ),
+                    const SizedBox(height: 8),
+                    Center(
+                      child: TextButton(
+                        onPressed: () {
+                          Navigator.pushNamed(context, '/signup');
+                        },
+                        child: Text.rich(
+                          TextSpan(
+                            text: 'Don’t have an account? ',
+                            style:
+                                Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: AppColors.text,
+                                    ),
+                            children: [
+                              TextSpan(
+                                text: 'Sign Up',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(
+                                      color: AppColors.primary,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                              ),
+                            ],
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+                ),
               ),
             ),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _LoginTextField extends StatelessWidget {
-  final String hintText;
-  final bool obscureText;
-  final TextEditingController controller;
-
-  const _LoginTextField({
-    required this.hintText,
-    required this.controller,
-    this.obscureText = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return TextField(
-      controller: controller,
-      obscureText: obscureText,
-      decoration: InputDecoration(
-        filled: true,
-        fillColor: const Color(0xFFF3E9B5),
-        hintText: hintText,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(13),
-          borderSide: BorderSide.none,
-        ),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 12,
         ),
       ),
     );
