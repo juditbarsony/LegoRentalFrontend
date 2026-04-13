@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:lego_rental_frontend/core/services/api_service.dart';
+import 'package:lego_rental_frontend/core/theme/app_colors.dart';
 import 'package:lego_rental_frontend/core/widgets/app_background.dart';
 import 'package:lego_rental_frontend/features/home/home_screen.dart';
 import 'package:lego_rental_frontend/features/scan/scan_providers.dart';
@@ -280,23 +281,15 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
 
   Future<void> _finishSession() async {
     await ref.read(scanProvider.notifier).finishSession();
-
     if (!mounted) return;
 
     final session = ref.read(scanProvider).session;
     if (session == null) return;
 
-    final missing = session.missingCount;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          missing == 0
-              ? 'Scan finished – all elements found.'
-              : 'Scan finished – $missing elements still missing.',
-        ),
-        backgroundColor: missing == 0 ? Colors.green : Colors.orange,
-      ),
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => _ScanReportDialog(session: session),
     );
 
     ref.read(scanProvider.notifier).reset();
@@ -524,7 +517,6 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
                 ],
                 if (session != null) ...[
                   // ── Status + Progress ───────────────────────────────────
-// ── Status + Progress ───────────────────────────────────
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(14),
@@ -695,204 +687,283 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: Colors.grey[300]!),
                     ),
-                    child: ListView(
-                      padding: const EdgeInsets.all(8),
-                      children: session.itemsByPartNum.entries.map((entry) {
-                        final items = entry.value;
-                        final identifiedCount =
-                            items.where((i) => i.identified).length;
-                        final total = items.length;
-                        final allDone = identifiedCount == total;
-                        final partiallyDone =
-                            identifiedCount > 0 && identifiedCount < total;
+                    child: Builder(
+                      builder: (context) {
+                        final groupedEntries =
+                            session.itemsByPartNum.entries.toList();
 
-                        final firstName = items.first.name;
-                        final partNum = items.first.partNum;
-                        final color = items.first.color;
-                        final itemColor = items.first.color;
+                        groupedEntries.sort((a, b) {
+                          final aItems = a.value;
+                          final bItems = b.value;
 
-                        final imgUrl = items.first.imgUrl != null
-                            ? '${ApiService.baseUrl}/proxy/image?url=${Uri.encodeComponent(items.first.imgUrl!)}'
-                            : null;
+                          final aPartNum = aItems.first.partNum;
+                          final bPartNum = bItems.first.partNum;
 
-                        final isLastIdentified =
-                            scanState.lastResults.isNotEmpty &&
-                                items.any((i) => i.identified) &&
-                                scanState.lastResults.any(
-                                  (r) =>
-                                      r.partNum == partNum &&
-                                      (r.colorName == null ||
-                                          r.colorName == itemColor),
-                                );
+                          final aColor = aItems.first.color;
+                          final bColor = bItems.first.color;
 
-                        final borderColor = allDone
-                            ? Colors.green
-                            : partiallyDone
-                                ? Colors.orange
-                                : Colors.grey[300]!;
+                          final aIdentifiedCount =
+                              aItems.where((i) => i.identified).length;
+                          final bIdentifiedCount =
+                              bItems.where((i) => i.identified).length;
 
-                        final tileColor = isLastIdentified
-                            ? const Color(0xFFFFF8E1)
-                            : Colors.white;
+                          final aIsLastIdentified =
+                              scanState.lastResults.isNotEmpty &&
+                                  aItems.any((i) => i.identified) &&
+                                  scanState.lastResults.any(
+                                    (r) =>
+                                        r.partNum == aPartNum &&
+                                        (r.colorName == null ||
+                                            r.colorName == aColor),
+                                  );
 
-                        return InkWell(
-                          borderRadius: BorderRadius.circular(8),
-                          onTap: () => _showManualIdentifySheet(items),
-                          child: Container(
-                            margin: const EdgeInsets.only(bottom: 8),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 10,
-                            ),
-                            decoration: BoxDecoration(
-                              color: tileColor,
+                          final bIsLastIdentified =
+                              scanState.lastResults.isNotEmpty &&
+                                  bItems.any((i) => i.identified) &&
+                                  scanState.lastResults.any(
+                                    (r) =>
+                                        r.partNum == bPartNum &&
+                                        (r.colorName == null ||
+                                            r.colorName == bColor),
+                                  );
+
+                          int priority(
+                              bool isLastIdentified, int identifiedCount) {
+                            if (isLastIdentified) return 0;
+                            if (identifiedCount > 0) return 1;
+                            return 2;
+                          }
+
+                          final aPriority =
+                              priority(aIsLastIdentified, aIdentifiedCount);
+                          final bPriority =
+                              priority(bIsLastIdentified, bIdentifiedCount);
+
+                          final priorityCompare =
+                              aPriority.compareTo(bPriority);
+                          if (priorityCompare != 0) return priorityCompare;
+
+                          final identifiedCompare =
+                              bIdentifiedCount.compareTo(aIdentifiedCount);
+                          if (identifiedCompare != 0) return identifiedCompare;
+
+                          final totalCompare =
+                              bItems.length.compareTo(aItems.length);
+                          if (totalCompare != 0) return totalCompare;
+
+                          return aPartNum.compareTo(bPartNum);
+                        });
+
+                        return ListView(
+                          padding: const EdgeInsets.all(8),
+                          children: groupedEntries.map((entry) {
+                            final items = entry.value;
+                            final identifiedCount =
+                                items.where((i) => i.identified).length;
+                            final total = items.length;
+                            final allDone = identifiedCount == total;
+                            final partiallyDone =
+                                identifiedCount > 0 && identifiedCount < total;
+
+                            final firstName = items.first.name;
+                            final partNum = items.first.partNum;
+                            final color = items.first.color;
+                            final itemColor = items.first.color;
+
+                            final imgUrl = items.first.imgUrl != null
+                                ? '${ApiService.baseUrl}/proxy/image?url=${Uri.encodeComponent(items.first.imgUrl!)}'
+                                : null;
+
+                            final isLastIdentified =
+                                scanState.lastResults.isNotEmpty &&
+                                    items.any((i) => i.identified) &&
+                                    scanState.lastResults.any(
+                                      (r) =>
+                                          r.partNum == partNum &&
+                                          (r.colorName == null ||
+                                              r.colorName == itemColor),
+                                    );
+
+                            final borderColor = allDone
+                                ? Colors.green
+                                : partiallyDone
+                                    ? Colors.orange
+                                    : Colors.grey[300]!;
+
+                            final tileColor = isLastIdentified
+                                ? const Color(0xFFFFF8E1)
+                                : Colors.white;
+
+                            return InkWell(
                               borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                color: borderColor,
-                                width: isLastIdentified ? 2 : 1,
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                if (imgUrl != null)
-                                  Padding(
-                                    padding: const EdgeInsets.only(right: 8),
-                                    child: Image.network(
-                                      imgUrl,
-                                      width: 48,
-                                      height: 48,
-                                      fit: BoxFit.contain,
-                                      loadingBuilder: (
-                                        context,
-                                        child,
-                                        loadingProgress,
-                                      ) {
-                                        if (loadingProgress == null) {
-                                          return child;
-                                        }
-                                        return const SizedBox(
-                                          width: 20,
-                                          height: 20,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                          ),
-                                        );
-                                      },
-                                      errorBuilder:
-                                          (context, error, stackTrace) =>
-                                              const Icon(
-                                        Icons.broken_image,
-                                        size: 48,
-                                        color: Colors.grey,
-                                      ),
-                                    ),
-                                  ),
-                                Icon(
-                                  allDone
-                                      ? Icons.check_circle
-                                      : partiallyDone
-                                          ? Icons.radio_button_checked
-                                          : Icons.radio_button_unchecked,
-                                  color: allDone
-                                      ? Colors.green
-                                      : partiallyDone
-                                          ? Colors.orange
-                                          : Colors.grey,
-                                  size: 20,
+                              onTap: () => _showManualIdentifySheet(items),
+                              child: Container(
+                                margin: const EdgeInsets.only(bottom: 8),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 10,
                                 ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        partNum,
-                                        style: const TextStyle(
-                                          color: Color(0xFF391713),
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                      if (firstName != null)
-                                        Text(
-                                          firstName,
-                                          style: const TextStyle(
-                                            color: Color(0xFF252525),
-                                            fontSize: 11,
-                                          ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      if (color != null)
-                                        Text(
-                                          color,
-                                          style: const TextStyle(
-                                            color: Color(0xFF848383),
-                                            fontSize: 11,
-                                          ),
-                                        ),
-                                      if (isLastIdentified)
-                                        Builder(
-                                          builder: (context) {
-                                            final match = scanState.lastResults
-                                                .where(
-                                                    (r) => r.partNum == partNum)
-                                                .toList();
-
-                                            if (match.isEmpty) {
-                                              return const SizedBox();
+                                decoration: BoxDecoration(
+                                  color: tileColor,
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: borderColor,
+                                    width: isLastIdentified ? 2 : 1,
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    if (imgUrl != null)
+                                      Padding(
+                                        padding:
+                                            const EdgeInsets.only(right: 8),
+                                        child: Image.network(
+                                          imgUrl,
+                                          width: 48,
+                                          height: 48,
+                                          fit: BoxFit.contain,
+                                          loadingBuilder: (
+                                            context,
+                                            child,
+                                            loadingProgress,
+                                          ) {
+                                            if (loadingProgress == null) {
+                                              return child;
                                             }
-
-                                            final best = match.reduce(
-                                              (a, b) =>
-                                                  a.confidence > b.confidence
-                                                      ? a
-                                                      : b,
-                                            );
-
-                                            return Text(
-                                              'Confidence: ${(best.confidence * 100).toStringAsFixed(0)}%',
-                                              style: const TextStyle(
-                                                color: Color(0xFF391713),
-                                                fontSize: 11,
-                                                fontWeight: FontWeight.w500,
+                                            return const SizedBox(
+                                              width: 20,
+                                              height: 20,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
                                               ),
                                             );
                                           },
+                                          errorBuilder:
+                                              (context, error, stackTrace) =>
+                                                  const Icon(
+                                            Icons.broken_image,
+                                            size: 48,
+                                            color: Colors.grey,
+                                          ),
                                         ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  children: [
-                                    Text(
-                                      '$identifiedCount/$total',
-                                      style: TextStyle(
-                                        color: allDone
-                                            ? Colors.green
-                                            : partiallyDone
-                                                ? Colors.orange[800]
-                                                : const Color(0xFF391713),
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 13,
+                                      ),
+                                    Icon(
+                                      allDone
+                                          ? Icons.check_circle
+                                          : partiallyDone
+                                              ? Icons.radio_button_checked
+                                              : Icons.radio_button_unchecked,
+                                      color: allDone
+                                          ? Colors.green
+                                          : partiallyDone
+                                              ? Colors.orange
+                                              : Colors.grey,
+                                      size: 20,
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            partNum,
+                                            style: const TextStyle(
+                                              color: Color(0xFF391713),
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                          if (firstName != null)
+                                            Text(
+                                              firstName,
+                                              style: const TextStyle(
+                                                color: Color(0xFF252525),
+                                                fontSize: 11,
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          if (color != null)
+                                            Text(
+                                              color,
+                                              style: const TextStyle(
+                                                color: Color(0xFF848383),
+                                                fontSize: 11,
+                                              ),
+                                            ),
+                                          if (isLastIdentified)
+                                            Builder(
+                                              builder: (context) {
+                                                final match =
+                                                    scanState.lastResults
+                                                        .where(
+                                                          (r) =>
+                                                              r.partNum ==
+                                                                  partNum &&
+                                                              (r.colorName ==
+                                                                      null ||
+                                                                  r.colorName ==
+                                                                      itemColor),
+                                                        )
+                                                        .toList();
+
+                                                if (match.isEmpty) {
+                                                  return const SizedBox();
+                                                }
+
+                                                final best = match.reduce(
+                                                  (a, b) => a.confidence >
+                                                          b.confidence
+                                                      ? a
+                                                      : b,
+                                                );
+
+                                                return Text(
+                                                  'Confidence: ${(best.confidence * 100).toStringAsFixed(0)}%',
+                                                  style: const TextStyle(
+                                                    color: Color(0xFF391713),
+                                                    fontSize: 11,
+                                                    fontWeight: FontWeight.w500,
+                                                  ),
+                                                );
+                                              },
+                                            ),
+                                        ],
                                       ),
                                     ),
-                                    const SizedBox(height: 4),
-                                    const Icon(
-                                      Icons.chevron_right,
-                                      size: 18,
-                                      color: Color(0xFF848383),
+                                    const SizedBox(width: 8),
+                                    Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.end,
+                                      children: [
+                                        Text(
+                                          '$identifiedCount/$total',
+                                          style: TextStyle(
+                                            color: allDone
+                                                ? Colors.green
+                                                : partiallyDone
+                                                    ? Colors.orange[800]
+                                                    : const Color(0xFF391713),
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 13,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        const Icon(
+                                          Icons.chevron_right,
+                                          size: 18,
+                                          color: Color(0xFF848383),
+                                        ),
+                                      ],
                                     ),
                                   ],
                                 ),
-                              ],
-                            ),
-                          ),
+                              ),
+                            );
+                          }).toList(),
                         );
-                      }).toList(),
+                      },
                     ),
                   ),
                 ],
@@ -938,6 +1009,144 @@ class _InstructionRow extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _ScanReportDialog extends StatelessWidget {
+  final ScanSessionModel session;
+  const _ScanReportDialog({required this.session});
+
+  @override
+  Widget build(BuildContext context) {
+    final isComplete = session.missingCount == 0;
+
+    return AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      backgroundColor: AppColors.surface,
+      title: Row(
+        children: [
+          Icon(
+            isComplete ? Icons.check_circle : Icons.warning_amber_rounded,
+            color: isComplete ? Colors.green : Colors.orange,
+            size: 22,
+          ),
+          const SizedBox(width: 8),
+          Text(
+            isComplete ? 'Scan complete' : 'Scan finished',
+            style: const TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w600,
+              color: AppColors.text,
+            ),
+          ),
+        ],
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _ReportRow(
+            icon: Icons.inventory_2_outlined,
+            label: 'Expected elements',
+            value: '${session.totalCount}',
+          ),
+          _ReportRow(
+            icon: Icons.smart_toy_outlined,
+            label: 'AI identified',
+            value: '${session.aiCount}',
+            valueColor: Colors.green[700],
+          ),
+          _ReportRow(
+            icon: Icons.person_outline,
+            label: 'Manually confirmed',
+            value: '${session.manualCount}',
+            valueColor: Colors.blue[700],
+          ),
+          _ReportRow(
+            icon: Icons.remove_circle_outline,
+            label: 'Missing',
+            value: '${session.missingCount}',
+            valueColor: session.missingCount > 0
+                ? Colors.red[700]
+                : AppColors.textMuted,
+          ),
+          const SizedBox(height: 16),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: isComplete
+                  ? Colors.green.withOpacity(0.1)
+                  : Colors.orange.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(
+              isComplete
+                  ? 'All elements found – return approved.'
+                  : '${session.missingCount} element(s) missing.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: isComplete ? Colors.green[700] : Colors.orange[700],
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+              ),
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text(
+            'Close',
+            style: TextStyle(color: AppColors.primary),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ReportRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  final Color? valueColor;
+
+  const _ReportRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+    this.valueColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 5),
+      child: Row(
+        children: [
+          Icon(icon, size: 17, color: AppColors.textMuted),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              label,
+              style: const TextStyle(
+                color: AppColors.textMuted,
+                fontSize: 13,
+              ),
+            ),
+          ),
+          Text(
+            value,
+            style: TextStyle(
+              fontWeight: FontWeight.w700,
+              fontSize: 15,
+              color: valueColor ?? AppColors.text,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

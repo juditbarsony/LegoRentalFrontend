@@ -4,7 +4,7 @@ class ScanItemModel {
   final String partNum;
   final String? name;
   final String? color;
-  final String? imgUrl; 
+  final String? imgUrl;
   final String status;
   final double? confidence;
 
@@ -49,40 +49,72 @@ class ScanSessionModel {
   final int id;
   final int rentalId;
   final int legoSetId;
+  final int? scannedBy; // ÚJ
   final DateTime scannedAt;
+  final DateTime? finishedAt; // ÚJ
   final String status;
   final List<ScanItemModel> items;
+  // Kalkulált mezők a backend válaszából (fallback: getter számol)
+  final int? _expectedCount;
+  final int? _identifiedCountOverride;
+  final int? _manuallyConfirmedCountOverride;
+  final int? _missingCountOverride;
 
   ScanSessionModel({
     required this.id,
     required this.rentalId,
     required this.legoSetId,
+    this.scannedBy,
     required this.scannedAt,
+    this.finishedAt,
     required this.status,
     required this.items,
-  });
+    int? expectedCount,
+    int? identifiedCountOverride,
+    int? manuallyConfirmedCountOverride,
+    int? missingCountOverride,
+  })  : _expectedCount = expectedCount,
+        _identifiedCountOverride = identifiedCountOverride,
+        _manuallyConfirmedCountOverride = manuallyConfirmedCountOverride,
+        _missingCountOverride = missingCountOverride;
 
   factory ScanSessionModel.fromJson(Map<String, dynamic> json) {
+    print('DEBUG fromJson items: ${(json['items'] as List?)?.length}');
+    print('DEBUG fromJson expected_count: ${json['expected_count']}');
     return ScanSessionModel(
       id: json['id'] as int,
       rentalId: json['rental_id'] as int,
       legoSetId: json['lego_set_id'] as int,
+      scannedBy: json['scanned_by'] as int?,
       scannedAt: DateTime.parse(json['scanned_at'] as String),
+      finishedAt: json['finished_at'] != null
+          ? DateTime.parse(json['finished_at'] as String)
+          : null,
       status: json['status'] as String,
-      items: (json['items'] as List<dynamic>)
+      items: (json['items'] as List<dynamic>? ?? [])
           .map((e) => ScanItemModel.fromJson(e as Map<String, dynamic>))
           .toList(),
+      expectedCount: json['expected_count'] as int?,
+      identifiedCountOverride: json['identified_count'] as int?,
+      manuallyConfirmedCountOverride: json['manually_confirmed_count'] as int?,
+      missingCountOverride: json['missing_count'] as int?,
     );
   }
 
-  // ── Getterek ──────────────────────────────────────────────
-  int get identifiedCount => items.where((i) => i.isFound).length;
-  int get totalCount => items.length;
-  int get missingCount => items.where((i) => i.isMissing).length;
+  // ── Getterek – backend értéket használ, ha van, egyébként lokálisan számol ──
+  int get identifiedCount =>
+      _identifiedCountOverride ?? items.where((i) => i.isFound).length;
+  int get totalCount => _expectedCount ?? items.length;
+  int get missingCount =>
+      _missingCountOverride ?? items.where((i) => i.isMissing).length;
   int get aiCount => items.where((i) => i.isIdentified).length;
-  int get manualCount => items.where((i) => i.isManuallyConfirmed).length;
+  int get manualCount =>
+      _manuallyConfirmedCountOverride ??
+      items.where((i) => i.isManuallyConfirmed).length;
 
-  // part_num + color szerint csoportosítva
+  bool get isComplete => status == 'COMPLETE';
+
+  // part_num + color szerint csoportosítva – változatlan
   Map<String, List<ScanItemModel>> get itemsByPartNum {
     final map = <String, List<ScanItemModel>>{};
     for (final item in items) {

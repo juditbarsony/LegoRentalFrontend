@@ -1,8 +1,32 @@
 import 'dart:convert';
+
 import 'package:http/http.dart' as http;
 import 'package:lego_rental_frontend/core/models/availability_model.dart';
 import 'package:lego_rental_frontend/core/models/lego_set_model.dart';
 import 'package:lego_rental_frontend/core/services/api_service.dart';
+
+class SetAvailabilityModel {
+  final int id;
+  final int legoSetId;
+  final String startDate;
+  final String endDate;
+
+  const SetAvailabilityModel({
+    required this.id,
+    required this.legoSetId,
+    required this.startDate,
+    required this.endDate,
+  });
+
+  factory SetAvailabilityModel.fromJson(Map<String, dynamic> json) {
+    return SetAvailabilityModel(
+      id: json['id'] as int,
+      legoSetId: json['lego_set_id'] as int,
+      startDate: json['start_date'] as String,
+      endDate: json['end_date'] as String,
+    );
+  }
+}
 
 class SetsRepository {
   final http.Client _client;
@@ -11,23 +35,9 @@ class SetsRepository {
 
   Future<Map<String, String>> _authHeaders(String token) async {
     return {
-      'Content-Type': 'application/json',
       'Authorization': 'Bearer $token',
+      'Content-Type': 'application/json',
     };
-  }
-
-  Future<LegoSetModel> getSetById(int id, String token) async {
-    final uri = Uri.parse('${ApiService.baseUrl}/sets/$id');
-    final response = await _client.get(uri, headers: await _authHeaders(token));
-
-    if (response.statusCode == 200) {
-      final jsonMap = jsonDecode(response.body) as Map<String, dynamic>;
-      return LegoSetModel.fromJson(jsonMap);
-    } else {
-      throw Exception(
-        'Nem sikerült lekérni a készletet: ${response.statusCode}',
-      );
-    }
   }
 
   Future<List<LegoSetModel>> loadSets({
@@ -50,7 +60,10 @@ class SetsRepository {
       '${ApiService.baseUrl}/sets/',
     ).replace(queryParameters: params);
 
-    final response = await _client.get(uri, headers: await _authHeaders(token));
+    final response = await _client.get(
+      uri,
+      headers: await _authHeaders(token),
+    );
 
     if (response.statusCode == 200) {
       final jsonList = jsonDecode(response.body) as List<dynamic>;
@@ -61,10 +74,52 @@ class SetsRepository {
       if (maxPrice != null) {
         return sets.where((s) => s.rentalPrice <= maxPrice).toList();
       }
+
       return sets;
     } else {
       throw Exception(
         'Nem sikerült lekérni a készletlistát: ${response.statusCode}',
+      );
+    }
+  }
+
+  Future<List<LegoSetModel>> loadMySets({
+    required String token,
+  }) async {
+    final uri = Uri.parse('${ApiService.baseUrl}/sets/my');
+
+    final response = await _client.get(
+      uri,
+      headers: await _authHeaders(token),
+    );
+
+    if (response.statusCode == 200) {
+      final jsonList = jsonDecode(response.body) as List<dynamic>;
+      return jsonList
+          .map((e) => LegoSetModel.fromJson(e as Map<String, dynamic>))
+          .toList();
+    } else {
+      throw Exception(
+        'Nem sikerült lekérni a saját készleteket: ${response.statusCode}',
+      );
+    }
+  }
+
+  Future<LegoSetModel> getSetById(int id, String token) async {
+    final uri = Uri.parse('${ApiService.baseUrl}/sets/$id');
+
+    final response = await _client.get(
+      uri,
+      headers: await _authHeaders(token),
+    );
+
+    if (response.statusCode == 200) {
+      return LegoSetModel.fromJson(
+        jsonDecode(response.body) as Map<String, dynamic>,
+      );
+    } else {
+      throw Exception(
+        'Nem sikerült lekérni a készlet részleteit: ${response.statusCode}',
       );
     }
   }
@@ -74,7 +129,11 @@ class SetsRepository {
     String token,
   ) async {
     final uri = Uri.parse('${ApiService.baseUrl}/sets/$setId/availabilities');
-    final response = await _client.get(uri, headers: await _authHeaders(token));
+
+    final response = await _client.get(
+      uri,
+      headers: await _authHeaders(token),
+    );
 
     if (response.statusCode == 200) {
       final jsonList = jsonDecode(response.body) as List<dynamic>;
@@ -83,7 +142,7 @@ class SetsRepository {
           .toList();
     } else {
       throw Exception(
-        'Nem sikerült lekérni az availability-ket: ${response.statusCode}',
+        'Nem sikerült lekérni az elérhetőségeket: ${response.statusCode}',
       );
     }
   }
@@ -102,33 +161,34 @@ class SetsRepository {
     required String token,
   }) async {
     final uri = Uri.parse('${ApiService.baseUrl}/sets/');
-    final body = jsonEncode({
-      if (setNum != null && setNum.isNotEmpty) 'set_num': setNum,
-      if (title != null && title.isNotEmpty) 'title': title,
+
+    final body = {
+      if (setNum != null && setNum.trim().isNotEmpty) 'set_num': setNum.trim(),
+      if (title != null && title.trim().isNotEmpty) 'title': title.trim(),
       'location': location,
       'rental_price': rentalPrice,
       'deposit': deposit,
       'scan_required': scanRequired,
       'public': isPublic,
-      if (state != null) 'state': state,
+      if (state != null && state.isNotEmpty) 'state': state,
       if (notes != null && notes.isNotEmpty) 'notes': notes,
-      if (missingItems != null && missingItems.isNotEmpty)
-        'missing_items': missingItems,
-    });
+      if (missingItems != null) 'missing_items': missingItems,
+    };
 
     final response = await _client.post(
       uri,
       headers: await _authHeaders(token),
-      body: body,
+      body: jsonEncode(body),
     );
 
-    if (response.statusCode == 201) {
+    if (response.statusCode == 200 || response.statusCode == 201) {
       return LegoSetModel.fromJson(
         jsonDecode(response.body) as Map<String, dynamic>,
       );
     } else {
-      final detail = jsonDecode(response.body)['detail'] ?? 'Unknown error';
-      throw Exception(detail);
+      throw Exception(
+        'Nem sikerült létrehozni a készletet: ${response.statusCode} ${response.body}',
+      );
     }
   }
 
@@ -139,17 +199,20 @@ class SetsRepository {
     required String token,
   }) async {
     final uri = Uri.parse('${ApiService.baseUrl}/sets/$setId/availabilities');
-    final body = jsonEncode({'start_date': startDate, 'end_date': endDate});
 
     final response = await _client.post(
       uri,
       headers: await _authHeaders(token),
-      body: body,
+      body: jsonEncode({
+        'start_date': startDate,
+        'end_date': endDate,
+      }),
     );
 
     if (response.statusCode != 200 && response.statusCode != 201) {
-      final detail = jsonDecode(response.body)['detail'] ?? 'Unknown error';
-      throw Exception('Availability error: $detail');
+      throw Exception(
+        'Nem sikerült hozzáadni az availability időszakot: ${response.statusCode} ${response.body}',
+      );
     }
   }
 }

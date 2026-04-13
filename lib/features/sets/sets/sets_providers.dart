@@ -4,13 +4,9 @@ import 'package:lego_rental_frontend/core/models/lego_set_model.dart';
 import 'package:lego_rental_frontend/features/auth/auth_providers.dart';
 import 'package:lego_rental_frontend/features/sets/data/sets_repository.dart';
 
-// ─── Repo provider ────────────────────────────────────────────────────────────
-
 final setsRepositoryProvider = Provider<SetsRepository>((ref) {
   return SetsRepository();
 });
-
-// ─── State ────────────────────────────────────────────────────────────────────
 
 class SetsState {
   final bool isLoading;
@@ -30,13 +26,11 @@ class SetsState {
   }) {
     return SetsState(
       isLoading: isLoading ?? this.isLoading,
-      error: error ?? this.error,
+      error: error,
       items: items ?? this.items,
     );
   }
 }
-
-// ─── Notifier ─────────────────────────────────────────────────────────────────
 
 class SetsNotifier extends StateNotifier<SetsState> {
   final SetsRepository _repo;
@@ -47,14 +41,16 @@ class SetsNotifier extends StateNotifier<SetsState> {
   Future<void> loadSets({
     String? keyword,
     int? themeId,
-    String? setStatus,   // ← 'state' helyett, névütközés elkerülése
+    String? setStatus,
     String? location,
     double? maxPrice,
   }) async {
     state = state.copyWith(isLoading: true, error: null);
+
     try {
       final token = _ref.read(authProvider).accessToken;
       if (token == null) throw Exception('Nincs access token');
+
       final sets = await _repo.loadSets(
         keyword: keyword,
         themeId: themeId,
@@ -63,14 +59,42 @@ class SetsNotifier extends StateNotifier<SetsState> {
         maxPrice: maxPrice,
         token: token,
       );
-      state = state.copyWith(isLoading: false, items: sets);
+
+      state = state.copyWith(
+        isLoading: false,
+        items: sets,
+        error: null,
+      );
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      state = state.copyWith(
+        isLoading: false,
+        error: e.toString(),
+      );
+    }
+  }
+
+  Future<void> loadMySets() async {
+    state = state.copyWith(isLoading: true, error: null);
+
+    try {
+      final token = _ref.read(authProvider).accessToken;
+      if (token == null) throw Exception('Nincs access token');
+
+      final sets = await _repo.loadMySets(token: token);
+
+      state = state.copyWith(
+        isLoading: false,
+        items: sets,
+        error: null,
+      );
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        error: e.toString(),
+      );
     }
   }
 }
-
-// ─── Provider ─────────────────────────────────────────────────────────────────
 
 final setsProvider =
     StateNotifierProvider<SetsNotifier, SetsState>((ref) {

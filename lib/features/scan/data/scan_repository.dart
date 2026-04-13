@@ -143,10 +143,11 @@ class ScanRepository {
     if (response.statusCode != 200) {
       throw Exception('Mark batch failed: ${response.statusCode}');
     }
-
-    return ScanSessionModel.fromJson(
-      jsonDecode(response.body) as Map<String, dynamic>,
-    );
+    final decoded = jsonDecode(response.body) as Map<String, dynamic>;
+    print(
+        'DEBUG markBatch response items: ${(decoded['items'] as List?)?.length}');
+    print('DEBUG identified_count: ${decoded['identified_count']}');
+    return ScanSessionModel.fromJson(decoded);
   }
 
   Future<ScanSessionModel> manualConfirmItem({
@@ -232,5 +233,18 @@ class ScanRepository {
     } else {
       throw Exception('Session lekérés sikertelen: ${response.statusCode}');
     }
+  }
+
+  Future<List<ScanSessionModel>> getMyReports({required String token}) async {
+    final uri = Uri.parse('${ApiService.baseUrl}/scan/my-reports');
+    final response = await _client.get(uri, headers: _authHeaders(token));
+
+    if (response.statusCode == 200) {
+      final list = jsonDecode(response.body) as List<dynamic>;
+      return list
+          .map((e) => ScanSessionModel.fromJson(e as Map<String, dynamic>))
+          .toList();
+    }
+    throw Exception('Reports betöltés sikertelen: ${response.statusCode}');
   }
 }

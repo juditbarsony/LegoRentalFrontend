@@ -12,6 +12,12 @@ import 'package:lego_rental_frontend/features/auth/auth_providers.dart';
 import 'package:lego_rental_frontend/features/friends/friends_service.dart';
 import 'package:lego_rental_frontend/features/home/home_screen.dart';
 import 'package:lego_rental_frontend/features/reviews/data/review_provider.dart';
+import 'package:lego_rental_frontend/features/scan/scan_report_provider.dart';
+import 'package:lego_rental_frontend/core/models/scan_models.dart';
+import 'package:lego_rental_frontend/features/sets/sets/sets_providers.dart';
+import 'package:lego_rental_frontend/core/models/lego_set_model.dart';
+import 'package:lego_rental_frontend/features/rentals/rental_providers.dart';
+import 'package:intl/intl.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -50,6 +56,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         await Future.wait([
           loadFriends(),
           loadAvailableUsers(),
+          ref.read(setsProvider.notifier).loadSets(),
+          ref.read(myRentalsProvider.notifier).load(),
         ]);
 
         if (!mounted) return;
@@ -163,11 +171,43 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     }
   }
 
+  String _formatRentalPeriod(DateTime startDate, DateTime endDate) {
+    return '${startDate.year}.${startDate.month.toString().padLeft(2, '0')}.${startDate.day.toString().padLeft(2, '0')}'
+        ' - '
+        '${endDate.year}.${endDate.month.toString().padLeft(2, '0')}.${endDate.day.toString().padLeft(2, '0')}';
+  }
+
+  String _formatStatus(String status) {
+    return status.replaceAll('_', ' ');
+  }
+
+  Color _statusColor(String status) {
+    switch (status) {
+      case 'REQUESTED':
+        return Colors.orange;
+      case 'ACCEPTED':
+        return Colors.blue;
+      case 'IN_PROGRESS':
+        return Colors.indigo;
+      case 'RETURN_PENDING':
+        return Colors.deepPurple;
+      case 'COMPLETED':
+        return Colors.green;
+      case 'CANCELLED':
+        return Colors.red;
+      default:
+        return AppColors.textMuted;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final reviewState = ref.watch(reviewProvider);
     final reviews = reviewState.reviews;
-
+    final setsState = ref.watch(setsProvider);
+    final mySets = (setsState.items as List).cast<LegoSetModel>();
+    final rentalsState = ref.watch(myRentalsProvider);
+    final myRentals = rentalsState.rentals;
     final averageRating = reviews.isEmpty
         ? 0.0
         : reviews.map((r) => r.rating).reduce((a, b) => a + b) / reviews.length;
@@ -438,6 +478,296 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       ...reviews.map((review) => _ReviewCard(review: review)),
                     ],
                   ],
+                ),
+              ),
+              const SizedBox(height: 20),
+              _SectionCard(
+                title: 'My sets',
+                child: Builder(
+                  builder: (context) {
+                    if (setsState.isLoading) {
+                      return const Center(
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(vertical: 12),
+                          child: CircularProgressIndicator(),
+                        ),
+                      );
+                    }
+
+                    if (setsState.error != null) {
+                      return Text(
+                        setsState.error!.replaceFirst('Exception: ', ''),
+                        style: const TextStyle(color: Colors.red, fontSize: 12),
+                      );
+                    }
+
+                    if (mySets.isEmpty) {
+                      return Text(
+                        'No sets uploaded yet.',
+                        style: Theme.of(context)
+                            .textTheme
+                            .bodySmall
+                            ?.copyWith(color: AppColors.textMuted),
+                      );
+                    }
+
+                    return ListView.separated(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: mySets.length,
+                      separatorBuilder: (_, __) => const Divider(height: 12),
+                      itemBuilder: (context, index) {
+                        final set = mySets[index];
+                        final total =
+                            set.lastScanExpectedCount ?? set.numberOfItems ?? 0;
+                        final aiIdentified = set.lastScanIdentifiedCount ?? 0;
+                        final manuallyAdded =
+                            set.lastScanManuallyConfirmedCount ?? 0;
+                        final missing = set.lastScanMissingCount ?? 0;
+
+                        final hasScanData = set.lastScanExpectedCount != null ||
+                            set.lastScanIdentifiedCount != null ||
+                            set.lastScanManuallyConfirmedCount != null ||
+                            set.lastScanMissingCount != null;
+
+                        return Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: AppColors.background,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: AppColors.border),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  if (set.imgUrl != null)
+                                    Padding(
+                                      padding: const EdgeInsets.only(right: 10),
+                                      child: ClipRRect(
+                                        borderRadius: BorderRadius.circular(8),
+                                        child: Image.network(
+                                          set.imgUrl!,
+                                          width: 56,
+                                          height: 56,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (_, __, ___) =>
+                                              Container(
+                                            width: 56,
+                                            height: 56,
+                                            color: Colors.grey.shade200,
+                                            child: const Icon(
+                                              Icons
+                                                  .image_not_supported_outlined,
+                                              color: Colors.grey,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          set.title,
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .bodyMedium
+                                              ?.copyWith(
+                                                color: AppColors.text,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          'Set #${set.setNum}',
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .bodySmall
+                                              ?.copyWith(
+                                                  color: AppColors.textMuted),
+                                        ),
+                                        if (set.createdAt.isNotEmpty) ...[
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            'Uploaded: ${set.createdAt.substring(0, 10)}',
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .bodySmall
+                                                ?.copyWith(
+                                                    color: AppColors.textMuted),
+                                          ),
+                                        ],
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 10),
+                              if (hasScanData) ...[
+                                Text(
+                                  'AI identified: $aiIdentified/$total',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodySmall
+                                      ?.copyWith(
+                                        color: AppColors.text,
+                                      ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Manually added: $manuallyAdded/$total',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodySmall
+                                      ?.copyWith(
+                                        color: AppColors.text,
+                                      ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Missing items: $missing/$total',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodySmall
+                                      ?.copyWith(
+                                        color: missing > 0
+                                            ? Colors.orange[800]
+                                            : Colors.green,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                ),
+                              ] else ...[
+                                Text(
+                                  'No return check yet.',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodySmall
+                                      ?.copyWith(
+                                        color: AppColors.textMuted,
+                                      ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 20),
+              _SectionCard(
+                title: 'My rentals',
+                child: Builder(
+                  builder: (context) {
+                    if (rentalsState.isLoading) {
+                      return const Center(
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(vertical: 12),
+                          child: CircularProgressIndicator(),
+                        ),
+                      );
+                    }
+
+                    if (rentalsState.errorMessage != null) {
+                      return Text(
+                        rentalsState.errorMessage!
+                            .replaceFirst('Exception: ', ''),
+                        style: const TextStyle(color: Colors.red, fontSize: 12),
+                      );
+                    }
+
+                    if (myRentals.isEmpty) {
+                      return Text(
+                        'No rentals yet.',
+                        style: Theme.of(context)
+                            .textTheme
+                            .bodySmall
+                            ?.copyWith(color: AppColors.textMuted),
+                      );
+                    }
+
+                    return ListView.separated(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: myRentals.length,
+                      separatorBuilder: (_, __) => const Divider(height: 12),
+                      itemBuilder: (context, index) {
+                        final rental = myRentals[index];
+
+                        return Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: AppColors.background,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: AppColors.border),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                rental.setTitle ?? 'Unknown set',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.copyWith(
+                                      color: AppColors.text,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Owner: ${rental.ownerName ?? 'Unknown owner'}',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(
+                                      color: AppColors.text,
+                                    ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Rental period: ${_formatRentalPeriod(rental.startDate, rental.endDate)}',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(
+                                      color: AppColors.text,
+                                    ),
+                              ),
+                              const SizedBox(height: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: _statusColor(rental.status)
+                                      .withOpacity(0.12),
+                                  borderRadius: BorderRadius.circular(999),
+                                ),
+                                child: Text(
+                                  _formatStatus(rental.status),
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodySmall
+                                      ?.copyWith(
+                                        color: _statusColor(rental.status),
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    );
+                  },
                 ),
               ),
             ],

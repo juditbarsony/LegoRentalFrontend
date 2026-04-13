@@ -52,7 +52,8 @@ class UploadNotifier extends StateNotifier<UploadState> {
     try {
       final token = ref.read(authProvider).accessToken;
       if (token == null) throw Exception('No access token.');
-      if (setNum == null && (title == null || title.isEmpty)) {
+      if ((setNum == null || setNum.trim().isEmpty) &&
+          (title == null || title.trim().isEmpty)) {
         throw Exception('Either Part Number or Title is required.');
       }
 

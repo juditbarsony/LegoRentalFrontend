@@ -14,11 +14,17 @@ class LegoSetModel {
   final List<String>? missingItems;
   final String createdAt;
   final String? imgUrl;
-  final String? visibility; // 'public' | 'friends_only'
+  final String? visibility;
   final String? ownerName;
   final double? averageRating;
   final int? reviewCount;
   final bool? scanBeforeReturn;
+
+  final int? lastScanExpectedCount;
+  final int? lastScanIdentifiedCount;
+  final int? lastScanManuallyConfirmedCount;
+  final int? lastScanMissingCount;
+  final String? lastScanFinishedAt;
 
   const LegoSetModel({
     required this.id,
@@ -41,6 +47,11 @@ class LegoSetModel {
     this.averageRating,
     this.reviewCount,
     this.scanBeforeReturn,
+    this.lastScanExpectedCount,
+    this.lastScanIdentifiedCount,
+    this.lastScanManuallyConfirmedCount,
+    this.lastScanMissingCount,
+    this.lastScanFinishedAt,
   });
 
   factory LegoSetModel.fromJson(Map<String, dynamic> json) {
@@ -57,7 +68,7 @@ class LegoSetModel {
       notes: json['notes'] as String?,
       public: json['public'] as bool? ?? true,
       numberOfItems: json['number_of_items'] as int?,
-      missingItems: (json['missing_items'] as List<dynamic>?)
+      missingItems: (json['missing_items'] as List?)
           ?.map((e) => e as String)
           .toList(),
       createdAt: json['created_at'] as String? ?? '',
@@ -67,6 +78,12 @@ class LegoSetModel {
       averageRating: (json['average_rating'] as num?)?.toDouble(),
       reviewCount: json['review_count'] as int?,
       scanBeforeReturn: json['scan_before_return'] as bool?,
+      lastScanExpectedCount: json['last_scan_expected_count'] as int?,
+      lastScanIdentifiedCount: json['last_scan_identified_count'] as int?,
+      lastScanManuallyConfirmedCount:
+          json['last_scan_manually_confirmed_count'] as int?,
+      lastScanMissingCount: json['last_scan_missing_count'] as int?,
+      lastScanFinishedAt: json['last_scan_finished_at'] as String?,
     );
   }
 }
